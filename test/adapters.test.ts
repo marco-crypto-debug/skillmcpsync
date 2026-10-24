@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { OpenCodeAdapter } from '../src/adapters/opencode.js';
+import { AntigravityAdapter } from '../src/adapters/antigravity.js';
 import { ClaudeDesktopAdapter } from '../src/adapters/claude_desktop.js';
 import { CursorAdapter } from '../src/adapters/cursor.js';
 import { CanonicalMcpServer } from '../src/core/types.js';
@@ -92,6 +93,39 @@ test('Adapters - Translation and merging', async (t) => {
       '-y',
       '@modelcontextprotocol/server-github',
     ]);
+  });
+
+  await t.test('AntigravityAdapter reads and writes mcpServers and skills', () => {
+    const fakeMcpConfig = path.join(tmpDir, 'gemini_config', 'mcp_config.json');
+    const fakeSkillsDir = path.join(tmpDir, 'gemini_skills');
+    fs.mkdirSync(path.dirname(fakeMcpConfig), { recursive: true });
+    fs.mkdirSync(fakeSkillsDir, { recursive: true });
+
+    const adapter = new AntigravityAdapter();
+    (adapter as any).getGeminiDir = () => path.join(tmpDir, 'gemini_root');
+    (adapter as any).getConfigPath = () => fakeMcpConfig;
+    (adapter as any).getSkillsPath = () => fakeSkillsDir;
+    (adapter as any).getSharedSkillsPath = () => path.join(tmpDir, 'shared_skills');
+
+    const servers: Record<string, CanonicalMcpServer> = {
+      rea: {
+        name: 'rea',
+        command: 'npx',
+        args: ['-y', 'rea-agents@4.0.1', 'mcp'],
+        enabled: true,
+      },
+    };
+
+    adapter.writeMcpServers(servers, { backup: false });
+    const readServers = adapter.readMcpServers();
+    assert.ok(readServers.rea);
+    assert.equal(readServers.rea.command, 'npx');
+    assert.deepEqual(readServers.rea.args, ['-y', 'rea-agents@4.0.1', 'mcp']);
+
+    adapter.writeSkills([{ name: 'test-skill', content: '# Test Skill' }], { backup: false });
+    const readSkills = adapter.readSkills();
+    assert.equal(readSkills.length, 1);
+    assert.equal(readSkills[0].name, 'test-skill');
   });
 
   // Clean up

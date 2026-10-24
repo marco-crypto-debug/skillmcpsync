@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { loadConfig } from '../core/config.js';
 import { VaultManager } from '../core/vault.js';
 import {
@@ -7,6 +9,7 @@ import {
   AgentMemorySession,
 } from '../core/memory.js';
 import { Permission, ConflictStrategy } from '../core/types.js';
+import { ProjectMemoryManager, FOCUSIN_AGENT_DIRECTIVE } from '../core/project_memory.js';
 import { logger } from '../utils/logger.js';
 import pc from 'picocolors';
 
@@ -292,4 +295,104 @@ export function memoryAclCommand(options: MemoryAclOptions): void {
   logger.header('Access Control Layer Permissions');
   console.log(acl.describe());
   logger.divider();
+}
+
+export function memoryExportMarkdownCommand(
+  outputPath?: string,
+  options: { vault?: string } = {}
+): void {
+  const { vault, pool, blackboard } = getMemoryContext(options.vault);
+  const memData = vault.readSharedMemory();
+  const servers = vault.readMcpServers();
+  const skills = vault.readSkills();
+
+  const report = blackboard.generateMarkdownReport({
+    scratchpads: memData.scratchpads,
+    mcpServers: Object.keys(servers),
+    skills: skills.map((s) => s.name),
+  });
+
+  const target = outputPath || path.join(vault.getPath(), 'MEMORY.md');
+  const dir = path.dirname(path.resolve(target));
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  fs.writeFileSync(target, report, 'utf8');
+
+  logger.success(`Exported complete memory to Markdown file: ${pc.bold(pc.cyan(target))}`);
+  console.log(pc.dim(`Includes ${Object.keys(pool.getAllEntries()).length} shared entries, blackboard state & agent scratchpads.`));
+}
+
+export function memoryProjectInitCommand(
+  targetDir?: string,
+  options: { name?: string; noRules?: boolean } = {}
+): void {
+  const dir = targetDir || process.cwd();
+  const mgr = new ProjectMemoryManager(dir);
+  const filePath = mgr.initProject(options.name, !options.noRules);
+
+  logger.success(`Initialized Project Memory in: ${pc.bold(pc.cyan(filePath))}`);
+  console.log(pc.dim('Injected mandatory reading rules into .cursorrules, CLAUDE.md, .windsurfrules, and .opencode/rules/'));
+  console.log(pc.green('All agents will now read AGENT_MEMORY.md before starting work!'));
+}
+
+export function memoryProjectLogCommand(
+  summary: string,
+  targetDir?: string,
+  options: { agent?: string; files?: string; decisions?: string } = {}
+): void {
+  const dir = targetDir || process.cwd();
+  const mgr = new ProjectMemoryManager(dir);
+  const agent = options.agent || 'agent';
+  const files = options.files ? options.files.split(',').map((s) => s.trim()) : undefined;
+
+  mgr.recordAction({
+    timestamp: new Date().toISOString(),
+    agent,
+    summary,
+    filesTouched: files,
+    keyDecisions: options.decisions,
+  });
+
+  logger.success(`Logged action by @${pc.magenta(agent)} into: ${pc.bold(pc.cyan(mgr.getMemoryFilePath()))}`);
+}
+
+export function memoryProjectReadCommand(targetDir?: string): void {
+  const dir = targetDir || process.cwd();
+  const mgr = new ProjectMemoryManager(dir);
+  const content = mgr.readMemory();
+
+  logger.header(`Project Memory: ${pc.cyan(mgr.getMemoryFilePath())}`);
+  console.log(content);
+  logger.divider();
+}
+
+export function memoryPromptFocusinCommand(options: {
+  inject?: boolean;
+  project?: string;
+  vault?: string;
+}): void {
+  logger.header('FocusIn 專案 Agent 開工核心準則 (FocusIn Directive)');
+  console.log(pc.cyan(FOCUSIN_AGENT_DIRECTIVE));
+  logger.divider();
+
+  const { vault, pool, blackboard } = getMemoryContext(options.vault);
+
+  // Write to shared memory pool under research/focusin_guidelines
+  try {
+    pool.write('system', 'research', 'focusin_guidelines', FOCUSIN_AGENT_DIRECTIVE);
+    vault.writeSharedMemory(pool.exportData());
+    vault.writeBlackboard(blackboard.getState());
+    logger.success('Saved FocusIn directive into Shared Memory pool: [research/focusin_guidelines]');
+  } catch {
+    // ignore
+  }
+
+  if (options.inject) {
+    const targetDir = options.project || process.cwd();
+    const mgr = new ProjectMemoryManager(targetDir);
+    const res = mgr.injectFocusinDirective();
+    logger.success(`Injected FocusIn Directive into ${res.injected.length} rule files in: ${pc.bold(pc.cyan(targetDir))}`);
+    console.log(pc.dim(`Files updated: ${res.injected.join(', ')}`));
+  }
 }

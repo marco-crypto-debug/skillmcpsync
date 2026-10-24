@@ -133,8 +133,23 @@ export class DiscoveryEngine {
   /**
    * Introspect tools across registered servers.
    */
-  introspectTools(serverOrigin = 'local'): DiscoveredToolSchema[] {
-    const servers = this.discoverMcpServers();
+  introspectTools(
+    serverOrigin = 'local',
+    currentServers?: Record<string, CanonicalMcpServer>
+  ): DiscoveredToolSchema[] {
+    const servers = currentServers
+      ? Object.fromEntries(
+          Object.entries(currentServers).map(([name, s]) => {
+            let transport: ServerTransport = 'stdio';
+            if (s.url) {
+              transport = s.url.startsWith('http') && s.url.includes('/sse') ? 'sse' : 'http';
+            } else if (s.type === 'sse' || s.type === 'remote') {
+              transport = 'sse';
+            }
+            return [name, { ...s, transport }];
+          })
+        )
+      : this.discoverMcpServers();
     const tools: DiscoveredToolSchema[] = [];
 
     for (const [serverName, server] of Object.entries(servers)) {

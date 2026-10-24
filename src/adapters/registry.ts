@@ -1,5 +1,6 @@
 import { AgentAdapter } from './base.js';
 import { OpenCodeAdapter } from './opencode.js';
+import { AntigravityAdapter } from './antigravity.js';
 import { ClaudeDesktopAdapter } from './claude_desktop.js';
 import { ClaudeCodeAdapter } from './claude_code.js';
 import { CursorAdapter } from './cursor.js';
@@ -8,6 +9,7 @@ import { WindsurfAdapter } from './windsurf.js';
 export class AdapterRegistry {
   private static adapters: AgentAdapter[] = [
     new OpenCodeAdapter(),
+    new AntigravityAdapter(),
     new ClaudeDesktopAdapter(),
     new ClaudeCodeAdapter(),
     new CursorAdapter(),

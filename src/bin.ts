@@ -19,6 +19,11 @@ import {
   memoryConflictsCommand,
   memoryHistoryCommand,
   memoryAclCommand,
+  memoryExportMarkdownCommand,
+  memoryProjectInitCommand,
+  memoryProjectLogCommand,
+  memoryProjectReadCommand,
+  memoryPromptFocusinCommand,
 } from './commands/memory.js';
 import { sync_all_resources } from './sync/sync_manager.js';
 import { SyncDaemon } from './sync/daemon.js';
@@ -248,6 +253,56 @@ memoryCmd
   .option('-v, --vault <path>', 'Custom local vault directory path')
   .action((opts) => {
     memoryAclCommand(opts);
+  });
+
+memoryCmd
+  .command('export-md [outputPath]')
+  .description('Export complete multi-agent memory and blackboard to a Markdown (.md) file')
+  .option('-v, --vault <path>', 'Custom local vault directory path')
+  .action((outputPath, opts) => {
+    memoryExportMarkdownCommand(outputPath, opts);
+  });
+
+// project memory subcommands (in-project AGENT_MEMORY.md with OpenMemory cognitive sectors)
+const projectMemCmd = memoryCmd
+  .command('project')
+  .description('Manage in-project AGENT_MEMORY.md and inject mandatory agent rules');
+
+projectMemCmd
+  .command('init [path]')
+  .description('Initialize AGENT_MEMORY.md in a project folder and inject agent rules')
+  .option('-n, --name <name>', 'Project name')
+  .option('--no-rules', 'Do not inject rules into .cursorrules, CLAUDE.md, etc.')
+  .action((targetPath, opts) => {
+    memoryProjectInitCommand(targetPath, opts);
+  });
+
+projectMemCmd
+  .command('log <summary> [path]')
+  .description('Log what an agent just completed into the project AGENT_MEMORY.md')
+  .option('-a, --agent <name>', 'Agent name (e.g. claude, opencode, cursor)')
+  .option('-f, --files <files>', 'Comma-separated files touched')
+  .option('-d, --decisions <decisions>', 'Key decisions or architectural choices')
+  .action((summary, targetPath, opts) => {
+    memoryProjectLogCommand(summary, targetPath, opts);
+  });
+
+projectMemCmd
+  .command('read [path]')
+  .description('Display the project AGENT_MEMORY.md file')
+  .action((targetPath) => {
+    memoryProjectReadCommand(targetPath);
+  });
+
+// prompt (FocusIn directive & guidelines)
+memoryCmd
+  .command('focusin')
+  .description('Display FocusIn agent directive, save to shared memory, or inject into project')
+  .option('-i, --inject', 'Inject directive into CLAUDE.md, .cursorrules, .windsurfrules, etc.')
+  .option('-p, --project <path>', 'Target project directory (default: current directory)')
+  .option('-v, --vault <path>', 'Custom local vault directory path')
+  .action((opts) => {
+    memoryPromptFocusinCommand(opts);
   });
 
 // reconcile (auto-sync tool across remote/local servers with file-lock safety)

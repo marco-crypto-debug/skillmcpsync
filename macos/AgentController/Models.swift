@@ -7,6 +7,37 @@ public enum ServerHealthStatus: String, Codable {
     case checking = "checking"
 }
 
+public struct AgentStatusItem: Identifiable, Codable, Hashable {
+    public var id: String
+    public var name: String
+    public var isInstalled: Bool
+    public var configPath: String
+    public var skillsPath: String
+    public var mcpCount: Int
+    public var skillCount: Int
+    public var icon: String
+
+    public init(
+        id: String,
+        name: String,
+        isInstalled: Bool,
+        configPath: String,
+        skillsPath: String,
+        mcpCount: Int = 0,
+        skillCount: Int = 0,
+        icon: String = "cpu"
+    ) {
+        self.id = id
+        self.name = name
+        self.isInstalled = isInstalled
+        self.configPath = configPath
+        self.skillsPath = skillsPath
+        self.mcpCount = mcpCount
+        self.skillCount = skillCount
+        self.icon = icon
+    }
+}
+
 public struct MCPServerItem: Identifiable, Codable, Hashable {
     public var id: String { name }
     public var name: String
@@ -19,6 +50,7 @@ public struct MCPServerItem: Identifiable, Codable, Hashable {
     public var healthStatus: ServerHealthStatus?
     public var latencyMs: Int?
     public var env: [String: String]?
+    public var sourceAgents: [String]
 
     public init(
         name: String,
@@ -30,7 +62,8 @@ public struct MCPServerItem: Identifiable, Codable, Hashable {
         enabled: Bool = true,
         healthStatus: ServerHealthStatus? = .healthy,
         latencyMs: Int? = 12,
-        env: [String: String]? = nil
+        env: [String: String]? = nil,
+        sourceAgents: [String] = []
     ) {
         self.name = name
         self.type = type
@@ -42,6 +75,7 @@ public struct MCPServerItem: Identifiable, Codable, Hashable {
         self.healthStatus = healthStatus
         self.latencyMs = latencyMs
         self.env = env
+        self.sourceAgents = sourceAgents
     }
 }
 
@@ -53,6 +87,7 @@ public struct SkillItem: Identifiable, Codable, Hashable {
     public var content: String
     public var enabled: Bool
     public var version: Int
+    public var localPath: String?
 
     public init(
         name: String,
@@ -60,7 +95,8 @@ public struct SkillItem: Identifiable, Codable, Hashable {
         description: String? = nil,
         content: String = "",
         enabled: Bool = true,
-        version: Int = 1
+        version: Int = 1,
+        localPath: String? = nil
     ) {
         self.name = name
         self.originServer = originServer
@@ -68,6 +104,7 @@ public struct SkillItem: Identifiable, Codable, Hashable {
         self.content = content
         self.enabled = enabled
         self.version = version
+        self.localPath = localPath
     }
 }
 
@@ -121,6 +158,37 @@ public struct MemoryEntryItem: Identifiable, Codable, Hashable {
         self.version = version
         self.timestamp = timestamp
     }
+}
+
+public struct ProjectActionItem: Identifiable, Codable, Hashable {
+    public var id: String { "\(timestamp.timeIntervalSince1970)_\(agent)" }
+    public var timestamp: Date
+    public var agent: String
+    public var summary: String
+    public var filesTouched: [String]
+    public var keyDecisions: String
+
+    public init(
+        timestamp: Date = Date(),
+        agent: String,
+        summary: String,
+        filesTouched: [String] = [],
+        keyDecisions: String = ""
+    ) {
+        self.timestamp = timestamp
+        self.agent = agent
+        self.summary = summary
+        self.filesTouched = filesTouched
+        self.keyDecisions = keyDecisions
+    }
+}
+
+public struct SyncLogItem: Identifiable, Hashable {
+    public var id = UUID()
+    public var timestamp: Date = Date()
+    public var message: String
+    public var isError: Bool = false
+    public var isSuccess: Bool = false
 }
 
 public struct DashboardOverview: Codable {

@@ -17,29 +17,34 @@ struct AgentControllerApp: App {
                     ServersView()
                 case .skillsAndTools:
                     SkillsToolsView()
+                case .projectMemory:
+                    ProjectMemoryView()
                 case .memory:
                     MemoryView()
-                case .blackboard:
-                    BlackboardView()
                 }
             }
-            .frame(minWidth: 800, minHeight: 520)
+            .frame(minWidth: 840, minHeight: 560)
         }
         .commands {
             CommandGroup(replacing: .newItem) {
-                Button("Sync All Resources Now") {
+                Button("⚡️ 一鍵同步所有 Agent") {
                     Task {
                         await DaemonClient.shared.triggerSync()
                     }
                 }
                 .keyboardShortcut("s", modifiers: [.command])
 
-                Button("Refresh State") {
+                Button("重新整理狀態") {
                     Task {
                         await DaemonClient.shared.refreshAll()
                     }
                 }
                 .keyboardShortcut("r", modifiers: [.command])
+
+                Button("匯出 MEMORY.md 至桌面") {
+                    _ = DaemonClient.shared.exportMemoryMarkdownToDesktop()
+                }
+                .keyboardShortcut("e", modifiers: [.command])
             }
         }
     }

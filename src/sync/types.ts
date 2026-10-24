@@ -56,6 +56,8 @@ export interface SyncResult {
   conflictsResolved: number;
   nodesUpdated: string[];
   errors: string[];
+  memoryMarkdownPath?: string;
+  memoryMarkdownContent?: string;
   details: {
     tools: DiscoveredToolSchema[];
     skills: DiscoveredSkill[];

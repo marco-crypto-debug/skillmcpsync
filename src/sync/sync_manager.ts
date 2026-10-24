@@ -49,7 +49,23 @@ export class SyncManager {
     remoteHealth: Record<string, boolean>;
   }> {
     const servers = this.vault.readMcpServers();
-    const tools = this.discovery.introspectTools('local');
+
+    // Auto-discover MCP servers from all locally installed coding agents
+    const activeAdapters = AdapterRegistry.getAll().filter((a) => a.isInstalled());
+    for (const adapter of activeAdapters) {
+      try {
+        const agentServers = adapter.readMcpServers();
+        for (const [name, s] of Object.entries(agentServers)) {
+          if (!servers[name]) {
+            servers[name] = s;
+          }
+        }
+      } catch {
+        // ignore read failure
+      }
+    }
+
+    const tools = this.discovery.introspectTools('local', servers);
     const skills = this.discovery.introspectSkills('local');
     const remoteHealth: Record<string, boolean> = {};
 
@@ -266,10 +282,11 @@ export class SyncManager {
           this.reconcileAndDedup(tools, skills, namespaceDuplicates);
 
         if (!options.dryRun) {
-          // 3. Write Reconciled Skills to Local Vault
+          // 3. Write Reconciled MCP Servers & Skills to Local Vault
+          this.vault.writeMcpServers(servers);
           this.vault.writeSkills(reconciledSkills);
 
-          // 4. Propagate to Local Coding Agents
+          // 4. Propagate to ALL Local Installed Coding Agents
           const activeAdapters = AdapterRegistry.getAll().filter((a) => a.isInstalled());
           for (const adapter of activeAdapters) {
             try {
@@ -289,8 +306,11 @@ export class SyncManager {
           nodesUpdated = await this.broadcastToNodes(remoteNodes, reconciledSkills, servers);
         }
 
-        // 6. Synchronize Shared Memory Pool & Blackboard
+        // 6. Synchronize Shared Memory Pool & Save MEMORY.md Report
         let memoryCount = 0;
+        let memoryMarkdownPath: string | undefined;
+        let memoryMarkdownContent: string | undefined;
+
         try {
           const rawAcl = this.vault.readAccessControl();
           const acl = Object.keys(rawAcl).length > 0
@@ -303,7 +323,16 @@ export class SyncManager {
 
           memoryCount = Object.keys(pool.getAllEntries()).length;
 
+          // Generate Markdown Document (.md)
+          const mdReport = blackboard.generateMarkdownReport({
+            scratchpads: memData.scratchpads,
+            mcpServers: Object.keys(servers),
+            skills: reconciledSkills.map((s) => s.name),
+          });
+          memoryMarkdownContent = mdReport;
+
           if (!options.dryRun) {
+            memoryMarkdownPath = this.vault.writeMemoryMarkdown(mdReport, 'MEMORY.md');
             this.vault.writeSharedMemory(pool.exportData());
             this.vault.writeBlackboard(blackboard.getState());
           }
@@ -324,6 +353,8 @@ export class SyncManager {
           conflictsResolved: conflictCount,
           nodesUpdated,
           errors,
+          memoryMarkdownPath,
+          memoryMarkdownContent,
           details: {
             tools: reconciledTools,
             skills: skills,

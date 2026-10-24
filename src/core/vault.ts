@@ -370,6 +370,18 @@ export class VaultManager {
     fs.writeFileSync(p, stringifyJson(state), 'utf8');
   }
 
+  writeMemoryMarkdown(markdownContent: string, filename = 'MEMORY.md'): string {
+    const targetPath = path.join(this.vaultPath, filename);
+    fs.writeFileSync(targetPath, markdownContent, 'utf8');
+    return targetPath;
+  }
+
+  readMemoryMarkdown(filename = 'MEMORY.md'): string | null {
+    const targetPath = path.join(this.vaultPath, filename);
+    if (!fs.existsSync(targetPath)) return null;
+    return fs.readFileSync(targetPath, 'utf8');
+  }
+
   readAll(): VaultData {
     return {
       manifest: this.readManifest(),

@@ -109,3 +109,21 @@ export interface BlackboardState {
   lastUpdatedBy?: string;
 }
 
+export type MemorySector = 'episodic' | 'semantic' | 'procedural' | 'reflective';
+
+export interface ProjectActionRecord {
+  timestamp: string;
+  agent: string;
+  summary: string;
+  filesTouched?: string[];
+  keyDecisions?: string;
+}
+
+export interface ProjectMemoryConfig {
+  projectPath: string;
+  projectName?: string;
+  memoryFilename?: string; // defaults to 'AGENT_MEMORY.md'
+  injectRules?: boolean;
+}
+
+
