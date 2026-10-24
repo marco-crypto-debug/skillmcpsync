@@ -1,0 +1,43 @@
+{
+  "name": "skillmcpsync",
+  "version": "1.0.0",
+  "description": "Multi-machine, multi-agent synchronization tool for MCP servers, skills, and tools via Git",
+  "type": "module",
+  "bin": {
+    "skillmcpsync": "./dist/bin.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup && tsc --declaration --emitDeclarationOnly --outDir dist && chmod +x dist/bin.js",
+    "watch": "tsup --watch",
+    "test": "tsx --test test/*.test.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "opencode",
+    "claude",
+    "cursor",
+    "windsurf",
+    "skills",
+    "sync",
+    "git"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^13.1.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
+  }
+}
