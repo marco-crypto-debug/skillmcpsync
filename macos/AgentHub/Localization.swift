@@ -187,7 +187,7 @@ public struct L10n {
             switch self {
             // Navigation & App
             case .appTitle:
-                return "Agent Controller"
+                return "AgentHub"
             case .navOverview:
                 switch lang {
                 case .traditionalChinese: return "總覽與同步"

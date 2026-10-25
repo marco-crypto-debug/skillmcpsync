@@ -1,5 +1,5 @@
 /**
- * AgentController — Apple-Style Interactive Web Application
+ * AgentHub — Apple-Style Interactive Web Application
  * Handles i18n, Theme Toggling, Interactive Window Tabs, and Copy-to-Clipboard.
  */
 
@@ -10,11 +10,11 @@ const translations = {
     navAgentHub: "AgentHub",
     navCLI: "CLI & Sync",
     navDownload: "Download",
-    heroAnnounce: "AgentController v1.0.0 is live for macOS",
+    heroAnnounce: "AgentHub v1.0.0 is live for macOS",
     heroTitlePart1: "One Hub.",
     heroTitlePart2: "Every AI Agent.",
     heroSubtitle: "The unified native control center for OpenCode, Antigravity (Gemini), Claude Desktop, Cursor, and Windsurf. Centralize Skills, MCP Servers, and OpenMemory with 1-click sync.",
-    btnDownloadDMG: "Download AgentController.dmg",
+    btnDownloadDMG: "Download AgentHub.dmg",
     btnViewGitHub: "View on GitHub",
     heroRequirement: "Requires macOS 13.0 Ventura or later • Apple Silicon & Intel Universal",
     
@@ -28,7 +28,7 @@ const translations = {
     // Bento Grid Section
     sectionTag: "Next-Gen AI Workspace",
     sectionTitle: "Engineered for Multi-Agent Mastery",
-    sectionDesc: "Stop copying MCP JSONs and duplicating skills across 5 different apps. AgentController bridges every agent into a single, cohesive intelligence hub.",
+    sectionDesc: "Stop copying MCP JSONs and duplicating skills across 5 different apps. AgentHub bridges every agent into a single, cohesive intelligence hub.",
 
     bentoCard1Badge: "Dedicated Directory",
     bentoCard1Title: "Centralized ~/AgentHub",
@@ -58,7 +58,7 @@ const translations = {
     // Download Section
     downloadTitle: "Supercharge your AI Agents today.",
     downloadDesc: "Experience the fastest, most reliable multi-agent synchronizer and hub on macOS. Free and open source.",
-    downloadDMG: "Download AgentController (DMG)",
+    downloadDMG: "Download AgentHub (DMG)",
     downloadCLI: "Install CLI: npx skillmcpsync sync",
     versionMeta: "v1.0.0 • macOS 13.0+ • Universal Binary (1.6 MB)"
   },
@@ -68,11 +68,11 @@ const translations = {
     navAgentHub: "AgentHub 資料夾",
     navCLI: "終端機 CLI",
     navDownload: "立即下載",
-    heroAnnounce: "AgentController v1.0.0 原生 macOS 正式發布",
+    heroAnnounce: "AgentHub v1.0.0 原生 macOS 正式發布",
     heroTitlePart1: "一個中樞。",
     heroTitlePart2: "所有 AI Agent。",
     heroSubtitle: "專為 Mac 開發者打造的 AI Coding Agent 集中控制中心。OpenCode、Antigravity (Gemini)、Claude、Cursor 與 Windsurf，一個按鈕無縫同步所有 Skills、MCP 與長效記憶。",
-    btnDownloadDMG: "下載 AgentController.dmg",
+    btnDownloadDMG: "下載 AgentHub.dmg",
     btnViewGitHub: "GitHub 代碼庫",
     heroRequirement: "支援 macOS 13.0 Ventura 及更高版本 • Apple Silicon 與 Intel 通用",
 
@@ -84,7 +84,7 @@ const translations = {
 
     sectionTag: "新世代 AI 開發工作流",
     sectionTitle: "專為駕馭多 Agent 打造的原生架構",
-    sectionDesc: "告別在 5 個不同的 AI 編輯器手動複製貼上 MCP 設定與重複下載 Skill。AgentController 將所有 Agent 凝聚為協同一致的超級大腦。",
+    sectionDesc: "告別在 5 個不同的 AI 編輯器手動複製貼上 MCP 設定與重複下載 Skill。AgentHub 將所有 Agent 凝聚為協同一致的超級大腦。",
 
     bentoCard1Badge: "專屬本機目錄",
     bentoCard1Title: "集中化 ~/AgentHub",
@@ -112,7 +112,7 @@ const translations = {
 
     downloadTitle: "立即讓你的所有 AI Agent 連成一體。",
     downloadDesc: "體驗 macOS 上最優雅、最直覺的多 Agent 技能與 MCP 同步中樞。開源且完全免費。",
-    downloadDMG: "下載 AgentController (DMG)",
+    downloadDMG: "下載 AgentHub (DMG)",
     downloadCLI: "終端機快速指令：npx skillmcpsync sync",
     versionMeta: "v1.0.0 • macOS 13.0+ • 通用二進制映像檔 (1.6 MB)"
   },
@@ -122,11 +122,11 @@ const translations = {
     navAgentHub: "AgentHub 目录",
     navCLI: "终端 CLI",
     navDownload: "立即下载",
-    heroAnnounce: "AgentController v1.0.0 原生 macOS 正式发布",
+    heroAnnounce: "AgentHub v1.0.0 原生 macOS 正式发布",
     heroTitlePart1: "一个中枢。",
     heroTitlePart2: "所有 AI Agent。",
     heroSubtitle: "专为 Mac 开发者打造的 AI Coding Agent 集中控制中心。OpenCode、Antigravity (Gemini)、Claude、Cursor 与 Windsurf，一个按钮无缝同步所有 Skills、MCP 与长效记忆。",
-    btnDownloadDMG: "下载 AgentController.dmg",
+    btnDownloadDMG: "下载 AgentHub.dmg",
     btnViewGitHub: "GitHub 代码库",
     heroRequirement: "支持 macOS 13.0 Ventura 及更高版本 • Apple Silicon 与 Intel 通用",
 
@@ -138,7 +138,7 @@ const translations = {
 
     sectionTag: "新世代 AI 开发工作流",
     sectionTitle: "专为驾驭多 Agent 打造的原生架构",
-    sectionDesc: "告别在 5 个不同的 AI 编辑器手动复制粘贴 MCP 配置与重复下载 Skill。AgentController 将所有 Agent 凝聚为协同一致的超级大脑。",
+    sectionDesc: "告别在 5 个不同的 AI 编辑器手动复制粘贴 MCP 配置与重复下载 Skill。AgentHub 将所有 Agent 凝聚为协同一致的超级大脑。",
 
     bentoCard1Badge: "专属本地目录",
     bentoCard1Title: "集中化 ~/AgentHub",
@@ -166,7 +166,7 @@ const translations = {
 
     downloadTitle: "立即让你的所有 AI Agent 连成一体。",
     downloadDesc: "体验 macOS 上最优雅、最直观的多 Agent 技能与 MCP 同步中枢。开源且完全免费。",
-    downloadDMG: "下载 AgentController (DMG)",
+    downloadDMG: "下载 AgentHub (DMG)",
     downloadCLI: "终端快速指令：npx skillmcpsync sync",
     versionMeta: "v1.0.0 • macOS 13.0+ • 通用二进制安装包 (1.6 MB)"
   }

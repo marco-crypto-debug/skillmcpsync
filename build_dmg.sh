@@ -8,7 +8,7 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DIST_DIR="${PROJECT_ROOT}/dist"
-APP_NAME="AgentController"
+APP_NAME="AgentHub"
 APP_BUNDLE="${DIST_DIR}/${APP_NAME}.app"
 DMG_PATH="${DIST_DIR}/${APP_NAME}.dmg"
 STAGING_DIR="${PROJECT_ROOT}/build_dmg_staging"
@@ -46,7 +46,7 @@ swiftc -O \
   -target "${TARGET_ARCH}" \
   -framework SwiftUI \
   -framework AppKit \
-  "${PROJECT_ROOT}/macos/AgentController/"*.swift \
+  "${PROJECT_ROOT}/macos/AgentHub/"*.swift \
   -o "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}"
 
 chmod +x "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}"
@@ -59,13 +59,13 @@ cat << 'EOF' > "${APP_BUNDLE}/Contents/Info.plist"
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>AgentController</string>
+    <string>AgentHub</string>
     <key>CFBundleIdentifier</key>
-    <string>com.agentcontroller.macos</string>
+    <string>com.agenthub.macos</string>
     <key>CFBundleName</key>
-    <string>AgentController</string>
+    <string>AgentHub</string>
     <key>CFBundleDisplayName</key>
-    <string>Agent Controller</string>
+    <string>AgentHub</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>

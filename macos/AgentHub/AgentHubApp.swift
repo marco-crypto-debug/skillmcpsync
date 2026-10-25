@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct AgentControllerApp: App {
+struct AgentHubApp: App {
     @State private var selectedItem: NavigationItem? = .overview
     @ObservedObject var langManager = LanguageManager.shared
 
