@@ -482,22 +482,408 @@ public struct SkillsToolsView: View {
     }
 }
 
-// MARK: - Project Memory View (OpenMemory & FocusIn)
+// MARK: - Agent Badge & Color Helper
+struct AgentBadgeHelper {
+    static func color(for agent: String) -> Color {
+        let name = agent.lowercased()
+        if name.contains("antigravity") || name.contains("gemini") {
+            return Color.blue
+        } else if name.contains("omo") || name.contains("oh-my") {
+            return Color.purple
+        } else if name.contains("opencode") {
+            return Color.green
+        } else if name.contains("claude") {
+            return Color.orange
+        } else if name.contains("cursor") {
+            return Color.cyan
+        } else if name.contains("windsurf") {
+            return Color.teal
+        } else {
+            return Color.gray
+        }
+    }
+
+    static func icon(for agent: String) -> String {
+        let name = agent.lowercased()
+        if name.contains("antigravity") || name.contains("gemini") {
+            return "sparkles"
+        } else if name.contains("omo") || name.contains("oh-my") {
+            return "bolt.horizontal.fill"
+        } else if name.contains("opencode") {
+            return "terminal.fill"
+        } else if name.contains("claude") {
+            return "brain"
+        } else if name.contains("cursor") {
+            return "macwindow"
+        } else if name.contains("windsurf") {
+            return "wind"
+        } else {
+            return "gearshape.2.fill"
+        }
+    }
+}
+
+// MARK: - Recent Projects Bar
+struct RecentProjectsBar: View {
+    @ObservedObject var client = DaemonClient.shared
+    @ObservedObject var langManager = LanguageManager.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Image(systemName: "clock.arrow.circlepath")
+                    .foregroundColor(.blue)
+                    .font(.caption)
+                Text(L10n.tr(.recentProjectsTitle))
+                    .font(.caption.bold())
+                    .foregroundColor(.secondary)
+                Spacer()
+                Button(action: {
+                    client.scanLocalProjects()
+                }) {
+                    Label(L10n.tr(.btnAutoScanProjects), systemImage: "sparkle.magnifyingglass")
+                        .font(.caption2)
+                }
+                .buttonStyle(.borderless)
+
+                Button(action: {
+                    selectProjectFolder()
+                }) {
+                    Label(L10n.tr(.btnChooseProjectFolder), systemImage: "folder.badge.plus")
+                        .font(.caption2)
+                }
+                .buttonStyle(.bordered)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(client.recentProjects) { proj in
+                        let isSelected = client.currentProjectPath == proj.path
+                        Button(action: {
+                            client.switchProject(to: proj.path)
+                        }) {
+                            HStack(spacing: 6) {
+                                if proj.isPinned {
+                                    Image(systemName: "pin.fill")
+                                        .font(.system(size: 9))
+                                        .foregroundColor(.orange)
+                                } else {
+                                    Image(systemName: "folder.fill")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(isSelected ? .blue : .secondary)
+                                }
+
+                                Text(proj.name)
+                                    .font(.system(size: 12, weight: isSelected ? .bold : .medium))
+                                    .foregroundColor(isSelected ? .blue : .primary)
+
+                                if proj.hasMemoryFile {
+                                    Text("\(proj.actionCount)")
+                                        .font(.system(size: 9, weight: .bold))
+                                        .padding(.horizontal, 5)
+                                        .padding(.vertical, 1)
+                                        .background(isSelected ? Color.blue.opacity(0.2) : Color.secondary.opacity(0.12))
+                                        .foregroundColor(isSelected ? .blue : .secondary)
+                                        .cornerRadius(8)
+                                }
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(isSelected ? Color.blue.opacity(0.12) : Color(NSColor.controlBackgroundColor))
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(isSelected ? Color.blue : Color.secondary.opacity(0.15), lineWidth: isSelected ? 1.5 : 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button(action: { client.togglePinProject(path: proj.path) }) {
+                                Label(proj.isPinned ? L10n.tr(.btnUnpin) : L10n.tr(.btnPin), systemImage: proj.isPinned ? "pin.slash" : "pin")
+                            }
+                            Button(action: { NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: proj.path) }) {
+                                Label("在 Finder 中顯示", systemImage: "macwindow")
+                            }
+                            Divider()
+                            Button(action: { client.removeRecentProject(path: proj.path) }) {
+                                Label(L10n.tr(.btnRemoveRecent), systemImage: "trash")
+                            }
+                        }
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+        }
+        .padding(10)
+        .background(Color(NSColor.controlBackgroundColor).opacity(0.6))
+        .cornerRadius(10)
+    }
+
+    private func selectProjectFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        if panel.runModal() == .OK, let url = panel.url {
+            client.switchProject(to: url.path)
+        }
+    }
+}
+
+// MARK: - Project Rule Audit Bar
+struct ProjectRuleAuditBar: View {
+    @ObservedObject var client = DaemonClient.shared
+    @ObservedObject var langManager = LanguageManager.shared
+
+    var body: some View {
+        HStack(spacing: 12) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(client.currentProjectAudit.allCompliant ? Color.green : Color.orange)
+                    .frame(width: 8, height: 8)
+                Text(client.currentProjectAudit.allCompliant ? L10n.tr(.auditAllCompliant) : L10n.tr(.auditMissingRules(client.currentProjectAudit.missingCount)))
+                    .font(.caption.bold())
+                    .foregroundColor(client.currentProjectAudit.allCompliant ? .green : .orange)
+            }
+
+            Spacer()
+
+            // Status badges
+            HStack(spacing: 6) {
+                AuditBadge(title: "AGENT_MEMORY.md", ok: client.currentProjectAudit.hasAgentMemory)
+                AuditBadge(title: "Claude", ok: client.currentProjectAudit.hasClaudeRules)
+                AuditBadge(title: "Cursor", ok: client.currentProjectAudit.hasCursorRules)
+                AuditBadge(title: "Windsurf", ok: client.currentProjectAudit.hasWindsurfRules)
+                AuditBadge(title: "OpenCode", ok: client.currentProjectAudit.hasOpenCodeRules)
+            }
+
+            if !client.currentProjectAudit.allCompliant {
+                Button(action: {
+                    client.injectFocusinPrompt()
+                }) {
+                    Text(L10n.tr(.btnFixAllRules))
+                        .font(.caption.bold())
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(8)
+    }
+}
+
+struct AuditBadge: View {
+    let title: String
+    let ok: Bool
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: ok ? "checkmark.circle.fill" : "xmark.circle")
+                .foregroundColor(ok ? .green : .secondary)
+                .font(.system(size: 9))
+            Text(title)
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(ok ? .primary : .secondary)
+        }
+        .padding(.horizontal, 5)
+        .padding(.vertical, 2)
+        .background(Color(NSColor.textBackgroundColor))
+        .cornerRadius(4)
+    }
+}
+
+// MARK: - Action Card View
+struct ActionCardView: View {
+    let action: ProjectActionItem
+    @State private var isExpanded: Bool = true
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Header: Agent + Timestamp + Tags
+            HStack(spacing: 8) {
+                HStack(spacing: 4) {
+                    Image(systemName: AgentBadgeHelper.icon(for: action.agent))
+                        .font(.caption2)
+                    Text("@\(action.agent)")
+                        .font(.caption.bold())
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(AgentBadgeHelper.color(for: action.agent).opacity(0.18))
+                .foregroundColor(AgentBadgeHelper.color(for: action.agent))
+                .cornerRadius(6)
+
+                if !action.timestampStr.isEmpty {
+                    Text(cleanTimestamp(action.timestampStr))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                ForEach(action.tags.prefix(3), id: \.self) { tag in
+                    Text(tag)
+                        .font(.system(size: 9, weight: .bold))
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Color.secondary.opacity(0.12))
+                        .foregroundColor(.secondary)
+                        .cornerRadius(4)
+                }
+            }
+
+            // Summary
+            Text(action.summary)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.primary)
+
+            // Files Touched
+            if !action.filesTouched.isEmpty {
+                HStack(alignment: .top, spacing: 4) {
+                    Text(L10n.tr(.labelFilesTouched))
+                        .font(.caption2.bold())
+                        .foregroundColor(.secondary)
+                        .padding(.top, 2)
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 4) {
+                            ForEach(action.filesTouched, id: \.self) { file in
+                                HStack(spacing: 3) {
+                                    Image(systemName: fileIcon(for: file))
+                                        .font(.system(size: 9))
+                                    Text(file)
+                                        .font(.system(size: 10, design: .monospaced))
+                                }
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(Color(NSColor.textBackgroundColor))
+                                .cornerRadius(4)
+                                .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.secondary.opacity(0.15), lineWidth: 1))
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Key Decisions (Bulleted List)
+            if !action.keyDecisions.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(L10n.tr(.labelKeyDecisions))
+                            .font(.caption2.bold())
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        if action.keyDecisions.count > 1 {
+                            Button(action: { isExpanded.toggle() }) {
+                                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            .buttonStyle(.borderless)
+                        }
+                    }
+
+                    if isExpanded {
+                        VStack(alignment: .leading, spacing: 3) {
+                            ForEach(action.keyDecisions, id: \.self) { dec in
+                                HStack(alignment: .top, spacing: 5) {
+                                    Text("•")
+                                        .font(.caption.bold())
+                                        .foregroundColor(AgentBadgeHelper.color(for: action.agent))
+                                    Text(dec)
+                                        .font(.caption)
+                                        .foregroundColor(.primary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                        }
+                        .padding(8)
+                        .background(Color(NSColor.textBackgroundColor).opacity(0.6))
+                        .cornerRadius(6)
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
+        )
+    }
+
+    private func cleanTimestamp(_ raw: String) -> String {
+        let cleaned = raw.replacingOccurrences(of: ".000Z", with: "").replacingOccurrences(of: "Z", with: "")
+        if cleaned.contains("T") {
+            let parts = cleaned.components(separatedBy: "T")
+            if parts.count == 2 {
+                let dateParts = parts[0].components(separatedBy: "-")
+                let time = parts[1].prefix(5)
+                if dateParts.count >= 3 {
+                    return "\(dateParts[1])/\(dateParts[2]) \(time)"
+                }
+            }
+        }
+        return raw
+    }
+
+    private func fileIcon(for filename: String) -> String {
+        if filename.hasSuffix(".swift") { return "swift" }
+        if filename.hasSuffix(".md") { return "doc.text" }
+        if filename.hasSuffix(".json") { return "curlybraces" }
+        if filename.hasSuffix(".sh") { return "terminal" }
+        return "doc"
+    }
+}
+
+// MARK: - Project Memory View (OpenMemory & Enhanced UI)
 public struct ProjectMemoryView: View {
     @ObservedObject var client = DaemonClient.shared
     @ObservedObject var langManager = LanguageManager.shared
 
+    @State private var selectedSector: Int = 0 // 0: Timeline, 1: Semantic, 2: Procedural, 3: Reflective, 4: Context, 5: Raw
+    @State private var searchQuery: String = ""
+    @State private var selectedAgentFilter: String = "ALL"
+
+    // Action Logging Form
     @State private var agentName: String = "OpenCode"
     @State private var actionSummary: String = ""
     @State private var filesTouched: String = ""
     @State private var keyDecisions: String = ""
-    @State private var showRawEditor: Bool = false
+    @State private var isLoggerExpanded: Bool = false
     @State private var statusToast: String?
+
+    var filteredActions: [ProjectActionItem] {
+        client.projectActions.filter { act in
+            let matchAgent = (selectedAgentFilter == "ALL") || (act.agent.lowercased() == selectedAgentFilter.lowercased())
+            if !matchAgent { return false }
+
+            if searchQuery.isEmpty { return true }
+            let q = searchQuery.lowercased()
+            let matchSum = act.summary.lowercased().contains(q)
+            let matchFiles = act.filesTouched.contains(where: { $0.lowercased().contains(q) })
+            let matchDec = act.keyDecisions.contains(where: { $0.lowercased().contains(q) })
+            let matchTags = act.tags.contains(where: { $0.lowercased().contains(q) })
+            return matchSum || matchFiles || matchDec || matchTags
+        }
+    }
+
+    var agentFilterCounts: [String: Int] {
+        var counts: [String: Int] = [:]
+        for a in client.projectActions {
+            counts[a.agent, default: 0] += 1
+        }
+        return counts
+    }
 
     public var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // Header & Project Picker
+            VStack(alignment: .leading, spacing: 18) {
+                // 1. Header & Quick Switcher
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(L10n.tr(.projectMemoryTitle))
@@ -507,32 +893,21 @@ public struct ProjectMemoryView: View {
                             .foregroundColor(.secondary)
                     }
                     Spacer()
-                    Button(L10n.tr(.btnChooseProjectFolder)) {
-                        selectProjectFolder()
+                    Button(action: {
+                        client.refreshProjectMemory()
+                    }) {
+                        Label(L10n.tr(.btnReload), systemImage: "arrow.clockwise")
                     }
                     .buttonStyle(.bordered)
                 }
 
-                // Current Path Banner
-                HStack {
-                    Image(systemName: "folder.badge.gearshape")
-                        .foregroundColor(.blue)
-                    Text(L10n.tr(.labelCurrentProject))
-                        .font(.caption.bold())
-                    Text(client.currentProjectPath)
-                        .font(.system(size: 12, design: .monospaced))
-                        .foregroundColor(.blue)
-                    Spacer()
-                    Button(L10n.tr(.btnReload)) {
-                        client.refreshProjectMemory()
-                    }
-                    .font(.caption)
-                }
-                .padding(10)
-                .background(Color(NSColor.controlBackgroundColor))
-                .cornerRadius(8)
+                // 2. Recent Projects Quick Switcher Bar
+                RecentProjectsBar()
 
-                // 🎯 FocusIn Directive Hero Banner
+                // 3. Project Rule Compliance Audit Bar
+                ProjectRuleAuditBar()
+
+                // 4. FocusIn Core Directive Banner
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
                         Image(systemName: "target")
@@ -564,152 +939,260 @@ public struct ProjectMemoryView: View {
                         .stroke(Color.red.opacity(0.3), lineWidth: 1)
                 )
 
-                // OpenMemory Episodic Timeline
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .foregroundColor(.purple)
-                        Text(L10n.tr(.episodicTimelineTitle))
-                            .font(.headline)
-                        Spacer()
-                        Text(L10n.tr(.episodicRecordsCount(client.projectActions.count)))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
+                // 5. OpenMemory Cognitive Sector Picker Tabs
+                Picker("", selection: $selectedSector) {
+                    Text(L10n.tr(.tabTimeline(client.projectActions.count))).tag(0)
+                    Text(L10n.tr(.tabSemantic)).tag(1)
+                    Text(L10n.tr(.tabProcedural)).tag(2)
+                    Text(L10n.tr(.tabReflective)).tag(3)
+                    Text(L10n.tr(.tabPromptBrief)).tag(4)
+                    Text(L10n.tr(.tabRawEditor)).tag(5)
+                }
+                .pickerStyle(.segmented)
 
-                    if client.projectActions.isEmpty {
-                        VStack(spacing: 8) {
-                            Text(L10n.tr(.emptyTimelinePrompt))
-                                .foregroundColor(.secondary)
-                            Button(L10n.tr(.btnInitProjectMemory)) {
-                                client.injectFocusinPrompt()
+                // 6. Sector Content Display
+                switch selectedSector {
+                case 0:
+                    // Episodic Timeline View
+                    VStack(alignment: .leading, spacing: 12) {
+                        // Search & Agent Filter Bar
+                        HStack(spacing: 10) {
+                            HStack {
+                                Image(systemName: "magnifyingglass")
+                                    .foregroundColor(.secondary)
+                                TextField(L10n.tr(.searchActionsPlaceholder), text: $searchQuery)
+                                    .textFieldStyle(.plain)
+                                if !searchQuery.isEmpty {
+                                    Button(action: { searchQuery = "" }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
                             }
-                            .buttonStyle(.borderedProminent)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(24)
-                        .background(Color(NSColor.controlBackgroundColor))
-                        .cornerRadius(10)
-                    } else {
-                        VStack(spacing: 10) {
-                            ForEach(client.projectActions) { action in
-                                VStack(alignment: .leading, spacing: 6) {
-                                    HStack {
-                                        Text("@\(action.agent)")
-                                            .font(.caption.bold())
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 2)
-                                            .background(Color.blue.opacity(0.15))
-                                            .foregroundColor(.blue)
-                                            .cornerRadius(6)
-                                        Text(action.summary)
-                                            .font(.subheadline.bold())
-                                        Spacer()
-                                    }
+                            .padding(8)
+                            .background(Color(NSColor.controlBackgroundColor))
+                            .cornerRadius(8)
 
-                                    if !action.filesTouched.isEmpty {
-                                        HStack(spacing: 4) {
-                                            Text(L10n.tr(.labelFilesTouched))
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                            ForEach(action.filesTouched, id: \.self) { file in
-                                                Text(file)
-                                                    .font(.system(size: 10, design: .monospaced))
-                                                    .padding(.horizontal, 4)
-                                                    .padding(.vertical, 1)
-                                                    .background(Color.secondary.opacity(0.12))
-                                                    .cornerRadius(4)
-                                            }
-                                        }
+                            // Quick Filter Pills
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 6) {
+                                    FilterPill(label: L10n.tr(.filterAll(client.projectActions.count)), isSelected: selectedAgentFilter == "ALL") {
+                                        selectedAgentFilter = "ALL"
                                     }
-
-                                    if !action.keyDecisions.isEmpty {
-                                        HStack(alignment: .top, spacing: 4) {
-                                            Text(L10n.tr(.labelKeyDecisions))
-                                                .font(.caption.bold())
-                                                .foregroundColor(.secondary)
-                                            Text(action.keyDecisions)
-                                                .font(.caption)
+                                    ForEach(agentFilterCounts.sorted(by: { $0.value > $1.value }), id: \.key) { ag, count in
+                                        FilterPill(label: "@\(ag) (\(count))", isSelected: selectedAgentFilter.lowercased() == ag.lowercased()) {
+                                            selectedAgentFilter = ag
                                         }
                                     }
                                 }
-                                .padding(12)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color(NSColor.controlBackgroundColor))
-                                .cornerRadius(8)
+                            }
+                        }
+
+                        // Actions List
+                        if filteredActions.isEmpty {
+                            VStack(spacing: 8) {
+                                Text(L10n.tr(.emptyTimelinePrompt))
+                                    .foregroundColor(.secondary)
+                                Button(L10n.tr(.btnInitProjectMemory)) {
+                                    client.injectFocusinPrompt()
+                                }
+                                .buttonStyle(.borderedProminent)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(32)
+                            .background(Color(NSColor.controlBackgroundColor))
+                            .cornerRadius(10)
+                        } else {
+                            VStack(spacing: 10) {
+                                ForEach(filteredActions) { action in
+                                    ActionCardView(action: action)
+                                }
                             }
                         }
                     }
+
+                case 1:
+                    // Semantic Memory View
+                    SectorCardView(
+                        title: L10n.tr(.tabSemantic),
+                        icon: "brain.fill",
+                        color: .blue,
+                        content: client.currentSectors.semanticMemory.isEmpty ? "尚未記錄架構與技術棧 facts。" : client.currentSectors.semanticMemory
+                    )
+
+                case 2:
+                    // Procedural Rules View
+                    SectorCardView(
+                        title: L10n.tr(.tabProcedural),
+                        icon: "wrench.and.screwdriver.fill",
+                        color: .green,
+                        content: client.currentSectors.proceduralRules.isEmpty ? "尚未記錄工作流程與防踩坑規範。" : client.currentSectors.proceduralRules
+                    )
+
+                case 3:
+                    // Reflective Notes View
+                    SectorCardView(
+                        title: L10n.tr(.tabReflective),
+                        icon: "exclamationmark.triangle.fill",
+                        color: .purple,
+                        content: client.currentSectors.reflectiveNotes.isEmpty ? "尚未記錄過往失敗方案與已知問題。" : client.currentSectors.reflectiveNotes
+                    )
+
+                case 4:
+                    // Prompt Brief View
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(L10n.tr(.tabPromptBrief))
+                                    .font(.headline)
+                                Text("為新對話 Agent 提供當前專案的最新高價值事實與約束")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Button(action: {
+                                client.copyPromptContextToClipboard()
+                                statusToast = "✔ " + L10n.tr(.btnCopyContext)
+                            }) {
+                                Label(L10n.tr(.btnCopyContext), systemImage: "doc.on.doc.fill")
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+
+                        ScrollView {
+                            Text(client.buildPromptContext())
+                                .font(.system(size: 11, design: .monospaced))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding()
+                                .background(Color(NSColor.textBackgroundColor))
+                                .cornerRadius(8)
+                        }
+                        .frame(height: 280)
+                    }
+                    .padding()
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(12)
+
+                case 5:
+                    // Raw Markdown Editor
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text(L10n.tr(.rawEditorTitle))
+                                .font(.headline)
+                            Spacer()
+                            Button(L10n.tr(.btnSaveChanges)) {
+                                let path = "\(client.currentProjectPath)/AGENT_MEMORY.md"
+                                try? client.projectMemoryRawText.write(toFile: path, atomically: true, encoding: .utf8)
+                                client.refreshProjectMemory()
+                                statusToast = "✔ " + L10n.tr(.btnSaveChanges)
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+
+                        TextEditor(text: $client.projectMemoryRawText)
+                            .font(.system(.caption, design: .monospaced))
+                            .frame(minHeight: 320)
+                            .padding(8)
+                            .background(Color(NSColor.textBackgroundColor))
+                            .cornerRadius(8)
+                    }
+                    .padding()
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(12)
+
+                default:
+                    EmptyView()
                 }
 
-                // Quick Action Logger Form
+                // 7. Quick Action Logger Form (Collapsible Panel)
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(L10n.tr(.quickLogTitle))
-                        .font(.headline)
-
-                    HStack(spacing: 12) {
-                        Picker(L10n.tr(.labelSourceAgent), selection: $agentName) {
-                            Text("OpenCode").tag("OpenCode")
-                            Text("OMO (Oh-My-OpenCode)").tag("OMO")
-                            Text("Claude").tag("Claude")
-                            Text("Cursor").tag("Cursor")
-                            Text("Windsurf").tag("Windsurf")
-                        }
-                        .frame(width: 260)
-
-                        TextField(L10n.tr(.placeholderSummary), text: $actionSummary)
-                            .textFieldStyle(.roundedBorder)
-                    }
-
-                    HStack(spacing: 12) {
-                        TextField(L10n.tr(.placeholderFiles), text: $filesTouched)
-                            .textFieldStyle(.roundedBorder)
-
-                        TextField(L10n.tr(.placeholderDecisions), text: $keyDecisions)
-                            .textFieldStyle(.roundedBorder)
-                    }
-
                     HStack {
+                        Image(systemName: "square.and.pencil")
+                            .foregroundColor(.blue)
+                        Text(L10n.tr(.quickLogTitle))
+                            .font(.headline)
                         Spacer()
-                        Button(L10n.tr(.btnLogAction)) {
-                            guard !actionSummary.isEmpty else { return }
-                            client.logProjectAction(
-                                agent: agentName,
-                                summary: actionSummary,
-                                files: filesTouched,
-                                decisions: keyDecisions
-                            )
-                            actionSummary = ""
-                            filesTouched = ""
-                            keyDecisions = ""
-                            statusToast = "✔ " + L10n.tr(.btnLogAction)
+                        Button(action: { isLoggerExpanded.toggle() }) {
+                            Image(systemName: isLoggerExpanded ? "chevron.up.circle.fill" : "chevron.down.circle")
+                                .font(.title3)
+                                .foregroundColor(.secondary)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(actionSummary.isEmpty)
+                        .buttonStyle(.borderless)
                     }
-                }
-                .padding()
-                .background(Color(NSColor.controlBackgroundColor))
-                .cornerRadius(12)
 
-                // Raw Markdown Inspector Toggle
-                DisclosureGroup(L10n.tr(.rawEditorTitle), isExpanded: $showRawEditor) {
-                    TextEditor(text: $client.projectMemoryRawText)
-                        .font(.system(.caption, design: .monospaced))
-                        .frame(minHeight: 200)
-                        .padding(8)
-                        .background(Color(NSColor.textBackgroundColor))
-                        .cornerRadius(8)
+                    if isLoggerExpanded {
+                        // Quick Presets
+                        HStack(spacing: 6) {
+                            Text("快速範本:")
+                                .font(.caption.bold())
+                                .foregroundColor(.secondary)
+                            Button("🎙 音訊防踩坑") {
+                                actionSummary = "修復音訊緩衝區溢位與格式鎖死問題"
+                                filesTouched = "source/app/TeacherApp/TeacherViewModel.swift, AGENT_MEMORY.md"
+                                keyDecisions = "鎖定首個合法塊格式 (lockedFormat)，拒收畸形塊。維護 inFlight 佇列保活連續記憶體。"
+                            }
+                            .buttonStyle(.bordered)
+                            .font(.caption2)
 
-                    HStack {
-                        Spacer()
-                        Button(L10n.tr(.btnSaveChanges)) {
-                            let path = "\(client.currentProjectPath)/AGENT_MEMORY.md"
-                            try? client.projectMemoryRawText.write(toFile: path, atomically: true, encoding: .utf8)
-                            client.refreshProjectMemory()
-                            statusToast = "✔ " + L10n.tr(.btnSaveChanges)
+                            Button("🍎 Swift 並發") {
+                                actionSummary = "升級 Swift 6 並發安全與 MainActor 標註"
+                                filesTouched = "source/app/TeacherApp/Views/DeltaStudioView.swift"
+                                keyDecisions = "將所有 UI 狀態變更綁定至 @MainActor，異步回調使用 [weak self] 防止循環引用。"
+                            }
+                            .buttonStyle(.bordered)
+                            .font(.caption2)
+
+                            Button("🖥 UI 改造") {
+                                actionSummary = "重構 Studio 界面為暗黑專業導播風格"
+                                filesTouched = "source/app/TeacherApp/Views/DeltaStudioView.swift"
+                                keyDecisions = "整合即時桌面預覽畫面與動態 Wi-Fi SSID 偵測。"
+                            }
+                            .buttonStyle(.bordered)
+                            .font(.caption2)
                         }
-                        .buttonStyle(.bordered)
+
+                        HStack(spacing: 12) {
+                            Picker(L10n.tr(.labelSourceAgent), selection: $agentName) {
+                                Text("OpenCode").tag("OpenCode")
+                                Text("OMO").tag("OMO")
+                                Text("Antigravity").tag("Antigravity")
+                                Text("Claude").tag("Claude")
+                                Text("Cursor").tag("Cursor")
+                                Text("Windsurf").tag("Windsurf")
+                            }
+                            .frame(width: 240)
+
+                            TextField(L10n.tr(.placeholderSummary), text: $actionSummary)
+                                .textFieldStyle(.roundedBorder)
+                        }
+
+                        HStack(spacing: 12) {
+                            TextField(L10n.tr(.placeholderFiles), text: $filesTouched)
+                                .textFieldStyle(.roundedBorder)
+
+                            TextField(L10n.tr(.placeholderDecisions), text: $keyDecisions)
+                                .textFieldStyle(.roundedBorder)
+                        }
+
+                        HStack {
+                            Spacer()
+                            Button(L10n.tr(.btnLogAction)) {
+                                guard !actionSummary.isEmpty else { return }
+                                client.logProjectAction(
+                                    agent: agentName,
+                                    summary: actionSummary,
+                                    files: filesTouched,
+                                    decisions: keyDecisions
+                                )
+                                actionSummary = ""
+                                filesTouched = ""
+                                keyDecisions = ""
+                                statusToast = "✔ " + L10n.tr(.btnLogAction)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(actionSummary.isEmpty)
+                        }
                     }
                 }
                 .padding()
@@ -726,15 +1209,60 @@ public struct ProjectMemoryView: View {
             .padding(20)
         }
     }
+}
 
-    private func selectProjectFolder() {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-        if panel.runModal() == .OK, let url = panel.url {
-            client.setProjectPath(url.path)
+// MARK: - Sector Card View
+struct SectorCardView: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let content: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundColor(color)
+                Text(title)
+                    .font(.headline)
+            }
+            ScrollView {
+                Text(content)
+                    .font(.system(size: 12, design: .monospaced))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+                    .background(Color(NSColor.textBackgroundColor))
+                    .cornerRadius(8)
+            }
+            .frame(minHeight: 220)
         }
+        .padding()
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(12)
+    }
+}
+
+// MARK: - Filter Pill
+struct FilterPill: View {
+    let label: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.caption2.bold())
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(isSelected ? Color.blue : Color(NSColor.controlBackgroundColor))
+                .foregroundColor(isSelected ? .white : .primary)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isSelected ? Color.blue : Color.secondary.opacity(0.2), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
     }
 }
 

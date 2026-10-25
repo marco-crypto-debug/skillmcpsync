@@ -39,7 +39,6 @@ public class LanguageManager: ObservableObject {
            let lang = AppLanguage(rawValue: saved) {
             self.currentLanguage = lang
         } else {
-            // Default to Traditional Chinese
             self.currentLanguage = .traditionalChinese
         }
     }
@@ -124,6 +123,25 @@ public struct L10n {
         case btnLogAction
         case rawEditorTitle
         case btnSaveChanges
+
+        // OpenMemory & Recent Projects Enhanced Keys
+        case recentProjectsTitle
+        case tabTimeline(Int)
+        case tabSemantic
+        case tabProcedural
+        case tabReflective
+        case tabPromptBrief
+        case tabRawEditor
+        case btnCopyContext
+        case searchActionsPlaceholder
+        case filterAll(Int)
+        case auditAllCompliant
+        case auditMissingRules(Int)
+        case btnFixAllRules
+        case btnPin
+        case btnUnpin
+        case btnRemoveRecent
+        case btnAutoScanProjects
 
         // Shared Memory View
         case sharedMemoryTitle
@@ -368,9 +386,9 @@ public struct L10n {
                 }
             case .btnChooseProjectFolder:
                 switch lang {
-                case .traditionalChinese: return "選擇專案目錄..."
-                case .simplifiedChinese: return "选择项目目录..."
-                case .english: return "Choose Project Folder..."
+                case .traditionalChinese: return "瀏覽其他專案..."
+                case .simplifiedChinese: return "浏览其他项目..."
+                case .english: return "Browse Other Project..."
                 }
             case .labelCurrentProject:
                 switch lang {
@@ -488,6 +506,110 @@ public struct L10n {
                 case .traditionalChinese: return "儲存變更"
                 case .simplifiedChinese: return "保存更改"
                 case .english: return "Save Changes"
+                }
+
+            // OpenMemory & Recent Projects Enhanced Keys
+            case .recentProjectsTitle:
+                switch lang {
+                case .traditionalChinese: return "最近訪問專案"
+                case .simplifiedChinese: return "最近访问项目"
+                case .english: return "Recent Projects"
+                }
+            case .tabTimeline(let count):
+                switch lang {
+                case .traditionalChinese: return "🕒 歷程時間軸 (\(count))"
+                case .simplifiedChinese: return "🕒 历程时间线 (\(count))"
+                case .english: return "🕒 Timeline (\(count))"
+                }
+            case .tabSemantic:
+                switch lang {
+                case .traditionalChinese: return "🧠 語意架構"
+                case .simplifiedChinese: return "🧠 语义架构"
+                case .english: return "🧠 Semantic"
+                }
+            case .tabProcedural:
+                switch lang {
+                case .traditionalChinese: return "🛠 程序與踩坑"
+                case .simplifiedChinese: return "🛠 流程与避坑"
+                case .english: return "🛠 Procedural"
+                }
+            case .tabReflective:
+                switch lang {
+                case .traditionalChinese: return "🔍 反思與待辦"
+                case .simplifiedChinese: return "🔍 反思与待办"
+                case .english: return "🔍 Reflective"
+                }
+            case .tabPromptBrief:
+                switch lang {
+                case .traditionalChinese: return "📋 開工 Context"
+                case .simplifiedChinese: return "📋 开工 Context"
+                case .english: return "📋 Prompt Brief"
+                }
+            case .tabRawEditor:
+                switch lang {
+                case .traditionalChinese: return "📄 原始 .md"
+                case .simplifiedChinese: return "📄 原始 .md"
+                case .english: return "📄 Raw .md"
+                }
+            case .btnCopyContext:
+                switch lang {
+                case .traditionalChinese: return "📋 一鍵複製給 Agent 的開工 Context"
+                case .simplifiedChinese: return "📋 一键复制给 Agent 的开工 Context"
+                case .english: return "📋 Copy Prompt Context for Agent"
+                }
+            case .searchActionsPlaceholder:
+                switch lang {
+                case .traditionalChinese: return "搜尋歷史動作、決策、檔案或標籤..."
+                case .simplifiedChinese: return "搜索历史动作、决策、文件或标签..."
+                case .english: return "Search actions, decisions, files, or tags..."
+                }
+            case .filterAll(let count):
+                switch lang {
+                case .traditionalChinese: return "全部 (\(count))"
+                case .simplifiedChinese: return "全部 (\(count))"
+                case .english: return "All (\(count))"
+                }
+            case .auditAllCompliant:
+                switch lang {
+                case .traditionalChinese: return "所有 Agent 規則已就緒"
+                case .simplifiedChinese: return "所有 Agent 规则已就绪"
+                case .english: return "All Agent Rules Synchronized"
+                }
+            case .auditMissingRules(let count):
+                switch lang {
+                case .traditionalChinese: return "發現 \(count) 個 Agent 規則未同步"
+                case .simplifiedChinese: return "发现 \(count) 个 Agent 规则未同步"
+                case .english: return "\(count) Agent rule(s) not synchronized"
+                }
+            case .btnFixAllRules:
+                switch lang {
+                case .traditionalChinese: return "一鍵同步修復所有 Agent 規則"
+                case .simplifiedChinese: return "一键同步修复所有 Agent 规则"
+                case .english: return "Sync All Agent Rules"
+                }
+            case .btnPin:
+                switch lang {
+                case .traditionalChinese: return "釘選專案"
+                case .simplifiedChinese: return "置顶项目"
+                case .english: return "Pin Project"
+                }
+            case .btnUnpin:
+                switch lang {
+                case .traditionalChinese: return "取消釘選"
+                case .simplifiedChinese: return "取消置顶"
+                case .english: return "Unpin Project"
+                }
+            case .btnRemoveRecent:
+                switch lang {
+                case .traditionalChinese: return "從最近記錄移除"
+                case .simplifiedChinese: return "从最近记录移除"
+                case .english: return "Remove from Recents"
+                }
+            case .btnAutoScanProjects:
+                switch lang {
+                case .traditionalChinese: return "自動掃描本機專案"
+                case .simplifiedChinese: return "自动扫描本机项目"
+                case .english: return "Auto-Scan Projects"
                 }
 
             // Shared Memory View

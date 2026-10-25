@@ -20,10 +20,13 @@ public class DaemonClient: ObservableObject {
     @Published public var scratchpadNotes: [String: [String]] = [:]
     @Published public var syncLogs: [SyncLogItem] = []
 
-    // Project Memory
+    // Project Memory & Recents
     @Published public var currentProjectPath: String = "/Users/marco/Documents/FocusIn"
+    @Published public var recentProjects: [RecentProjectItem] = []
     @Published public var projectActions: [ProjectActionItem] = []
     @Published public var projectMemoryRawText: String = ""
+    @Published public var currentProjectAudit: ProjectRuleAudit = ProjectRuleAudit()
+    @Published public var currentSectors: ProjectCognitiveSectors = ProjectCognitiveSectors()
 
     @Published public var overview: DashboardOverview = DashboardOverview(
         vaultPath: "~/.config/skillmcpsync/vault",
@@ -41,7 +44,138 @@ public class DaemonClient: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     public init() {
+        loadRecentProjects()
         refreshRealSystemState()
+    }
+
+    // MARK: - Recent Projects Management
+
+    public func loadRecentProjects() {
+        if let data = UserDefaults.standard.data(forKey: "recent_projects_v2"),
+           let items = try? JSONDecoder().decode([RecentProjectItem].self, from: data), !items.isEmpty {
+            self.recentProjects = items
+            if let first = items.first(where: { FileManager.default.fileExists(atPath: $0.path) }) {
+                self.currentProjectPath = first.path
+            }
+        } else {
+            // Seed defaults: FocusIn & skillmcpsync
+            var defaults: [RecentProjectItem] = []
+            if FileManager.default.fileExists(atPath: "/Users/marco/Documents/FocusIn") {
+                defaults.append(RecentProjectItem(
+                    name: "FocusIn",
+                    path: "/Users/marco/Documents/FocusIn",
+                    hasMemoryFile: FileManager.default.fileExists(atPath: "/Users/marco/Documents/FocusIn/AGENT_MEMORY.md"),
+                    actionCount: 8,
+                    isPinned: true
+                ))
+            }
+            if FileManager.default.fileExists(atPath: "/Users/marco/Documents/skillmcpsync") {
+                defaults.append(RecentProjectItem(
+                    name: "skillmcpsync",
+                    path: "/Users/marco/Documents/skillmcpsync",
+                    hasMemoryFile: FileManager.default.fileExists(atPath: "/Users/marco/Documents/skillmcpsync/AGENT_MEMORY.md"),
+                    actionCount: 1,
+                    isPinned: false
+                ))
+            }
+            self.recentProjects = defaults
+            saveRecentProjects()
+        }
+        scanLocalProjects()
+    }
+
+    public func saveRecentProjects() {
+        if let data = try? JSONEncoder().encode(recentProjects) {
+            UserDefaults.standard.set(data, forKey: "recent_projects_v2")
+        }
+    }
+
+    public func addOrUpdateRecent(path: String) {
+        let name = URL(fileURLWithPath: path).lastPathComponent
+        let hasMem = FileManager.default.fileExists(atPath: "\(path)/AGENT_MEMORY.md")
+
+        if let idx = recentProjects.firstIndex(where: { $0.path == path }) {
+            recentProjects[idx].lastVisited = Date()
+            recentProjects[idx].hasMemoryFile = hasMem
+        } else {
+            let newItem = RecentProjectItem(
+                name: name,
+                path: path,
+                lastVisited: Date(),
+                hasMemoryFile: hasMem,
+                actionCount: 0,
+                isPinned: false
+            )
+            recentProjects.insert(newItem, at: 0)
+        }
+        // Keep pinned at top, then by last visited
+        sortRecentProjects()
+        saveRecentProjects()
+    }
+
+    public func togglePinProject(path: String) {
+        if let idx = recentProjects.firstIndex(where: { $0.path == path }) {
+            recentProjects[idx].isPinned.toggle()
+            sortRecentProjects()
+            saveRecentProjects()
+        }
+    }
+
+    public func removeRecentProject(path: String) {
+        recentProjects.removeAll(where: { $0.path == path })
+        saveRecentProjects()
+        if currentProjectPath == path, let first = recentProjects.first {
+            switchProject(to: first.path)
+        }
+    }
+
+    public func sortRecentProjects() {
+        recentProjects.sort { (a, b) in
+            if a.isPinned != b.isPinned {
+                return a.isPinned && !b.isPinned
+            }
+            return a.lastVisited > b.lastVisited
+        }
+    }
+
+    public func scanLocalProjects() {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let documentsDir = "\(home)/Documents"
+        guard let subdirs = try? FileManager.default.contentsOfDirectory(atPath: documentsDir) else { return }
+
+        var changed = false
+        for sub in subdirs where !sub.hasPrefix(".") {
+            let fullPath = "\(documentsDir)/\(sub)"
+            var isDir: ObjCBool = false
+            if FileManager.default.fileExists(atPath: fullPath, isDirectory: &isDir), isDir.boolValue {
+                let hasMem = FileManager.default.fileExists(atPath: "\(fullPath)/AGENT_MEMORY.md")
+                let hasGit = FileManager.default.fileExists(atPath: "\(fullPath)/.git")
+                let hasPkg = FileManager.default.fileExists(atPath: "\(fullPath)/package.json") || FileManager.default.fileExists(atPath: "\(fullPath)/Package.swift")
+
+                if (hasMem || (hasGit && hasPkg)) && !recentProjects.contains(where: { $0.path == fullPath }) {
+                    recentProjects.append(RecentProjectItem(
+                        name: sub,
+                        path: fullPath,
+                        lastVisited: Date(timeIntervalSince1970: 0),
+                        hasMemoryFile: hasMem,
+                        actionCount: 0,
+                        isPinned: false
+                    ))
+                    changed = true
+                }
+            }
+        }
+        if changed {
+            sortRecentProjects()
+            saveRecentProjects()
+        }
+    }
+
+    public func switchProject(to newPath: String) {
+        currentProjectPath = newPath
+        addOrUpdateRecent(path: newPath)
+        refreshProjectMemory()
+        addLog("📂 切換當前專案至：\(newPath)")
     }
 
     // MARK: - Real System Scan (Zero Mock Data)
@@ -190,7 +324,7 @@ public class DaemonClient: ObservableObject {
             }
         }
 
-        // C. Also check ~/.gemini/antigravity/mcp/ folders (e.g. rea)
+        // C. Also check ~/.gemini/antigravity/mcp/ folders
         let antigravityMcpDir = "\(home)/.gemini/antigravity/mcp"
         if let subdirs = try? FileManager.default.contentsOfDirectory(atPath: antigravityMcpDir) {
             for sub in subdirs where !sub.hasPrefix(".") {
@@ -370,73 +504,216 @@ public class DaemonClient: ObservableObject {
     }
 
     public func setProjectPath(_ newPath: String) {
-        currentProjectPath = newPath
-        refreshProjectMemory()
+        switchProject(to: newPath)
     }
+
+    // MARK: - Robust Project Memory Parser & Cognitive Sectors
 
     public func refreshProjectMemory() {
         var targetDir = currentProjectPath
         if !FileManager.default.fileExists(atPath: targetDir) {
-            targetDir = "/Users/marco/Documents/FocusIn"
+            targetDir = recentProjects.first?.path ?? "/Users/marco/Documents/FocusIn"
         }
         currentProjectPath = targetDir
+
+        // Audit rules
+        auditProjectRules(targetDir: targetDir)
 
         let memPath = "\(targetDir)/AGENT_MEMORY.md"
         guard FileManager.default.fileExists(atPath: memPath),
               let content = try? String(contentsOfFile: memPath, encoding: .utf8) else {
             projectActions = []
             projectMemoryRawText = ""
+            currentSectors = ProjectCognitiveSectors()
             return
         }
 
         projectMemoryRawText = content
 
-        // Parse episodic actions
+        // Extract cognitive sectors
+        var sectors = ProjectCognitiveSectors()
+        sectors.semanticMemory = extractBetween(content: content, startMarker: "<!-- SEMANTIC_START -->", endMarker: "<!-- SEMANTIC_END -->")
+        sectors.proceduralRules = extractBetween(content: content, startMarker: "<!-- PROCEDURAL_START -->", endMarker: "<!-- PROCEDURAL_END -->")
+        sectors.reflectiveNotes = extractBetween(content: content, startMarker: "<!-- REFLECTIVE_START -->", endMarker: "<!-- REFLECTIVE_END -->")
+        self.currentSectors = sectors
+
+        // Parse episodic actions with multi-line decisions
         var actions: [ProjectActionItem] = []
         let lines = content.components(separatedBy: "\n")
         var currentAgent = ""
+        var currentTimestamp = ""
         var currentSummary = ""
         var currentFiles: [String] = []
-        var currentDecisions = ""
+        var currentDecisions: [String] = []
+        var isParsingDecisions = false
 
-        for line in lines {
+        for rawLine in lines {
+            let line = rawLine.trimmingCharacters(in: .whitespaces)
+
             if line.contains("### 🔹 [") {
                 if !currentSummary.isEmpty {
                     actions.append(ProjectActionItem(
+                        timestampStr: currentTimestamp,
                         agent: currentAgent,
                         summary: currentSummary,
                         filesTouched: currentFiles,
-                        keyDecisions: currentDecisions
+                        keyDecisions: currentDecisions,
+                        tags: inferTags(summary: currentSummary, files: currentFiles, decisions: currentDecisions)
                     ))
                     currentSummary = ""
                     currentFiles = []
-                    currentDecisions = ""
+                    currentDecisions = []
+                    isParsingDecisions = false
                 }
-                // Parse agent
+
+                // Parse timestamp e.g. [2026-10-25T04:14:00.000Z]
+                if let start = line.range(of: "["), let end = line.range(of: "]") {
+                    currentTimestamp = String(line[start.upperBound..<end.lowerBound])
+                }
+                // Parse agent e.g. @Antigravity
                 if let atRange = line.range(of: "@") {
                     currentAgent = String(line[atRange.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
                 }
-            } else if line.trimmingCharacters(in: .whitespaces).hasPrefix("- **Summary**:") {
-                let text = line.replacingOccurrences(of: "- **Summary**:", with: "").trimmingCharacters(in: .whitespaces)
-                currentSummary = text
+            } else if line.hasPrefix("- **Summary**:") {
+                isParsingDecisions = false
+                currentSummary = line.replacingOccurrences(of: "- **Summary**:", with: "").trimmingCharacters(in: .whitespaces)
             } else if line.contains("**Files Touched**:") {
-                let text = line.replacingOccurrences(of: "- **Files Touched**:", with: "").trimmingCharacters(in: .whitespaces)
+                isParsingDecisions = false
+                let text = line.replacingOccurrences(of: "- **Files Touched**:", with: "")
+                               .replacingOccurrences(of: "**Files Touched**:", with: "")
+                               .trimmingCharacters(in: .whitespaces)
                 let cleaned = text.replacingOccurrences(of: "`", with: "")
-                currentFiles = cleaned.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                currentFiles = cleaned.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
             } else if line.contains("**Key Decisions**:") {
-                let text = line.replacingOccurrences(of: "- **Key Decisions**:", with: "").trimmingCharacters(in: .whitespaces)
-                currentDecisions = text
+                isParsingDecisions = true
+                let inlineText = line.replacingOccurrences(of: "- **Key Decisions**:", with: "")
+                                     .replacingOccurrences(of: "**Key Decisions**:", with: "")
+                                     .trimmingCharacters(in: .whitespaces)
+                if !inlineText.isEmpty {
+                    currentDecisions.append(inlineText)
+                }
+            } else if isParsingDecisions && (line.hasPrefix("- ") || line.hasPrefix("* ")) {
+                let bulletText = line.dropFirst(2).trimmingCharacters(in: .whitespaces)
+                if !bulletText.isEmpty {
+                    currentDecisions.append(bulletText)
+                }
+            } else if isParsingDecisions && (line.hasPrefix("### ") || line.hasPrefix("## ") || line.hasPrefix("---")) {
+                isParsingDecisions = false
             }
         }
+
         if !currentSummary.isEmpty {
             actions.append(ProjectActionItem(
+                timestampStr: currentTimestamp,
                 agent: currentAgent,
                 summary: currentSummary,
                 filesTouched: currentFiles,
-                keyDecisions: currentDecisions
+                keyDecisions: currentDecisions,
+                tags: inferTags(summary: currentSummary, files: currentFiles, decisions: currentDecisions)
             ))
         }
+
         self.projectActions = actions
+
+        // Update count in recent list
+        if let idx = recentProjects.firstIndex(where: { $0.path == targetDir }) {
+            recentProjects[idx].actionCount = actions.count
+            recentProjects[idx].hasMemoryFile = true
+            recentProjects[idx].lastVisited = Date()
+            saveRecentProjects()
+        }
+    }
+
+    private func extractBetween(content: String, startMarker: String, endMarker: String) -> String {
+        guard let startRange = content.range(of: startMarker),
+              let endRange = content.range(of: endMarker, range: startRange.upperBound..<content.endIndex) else {
+            return ""
+        }
+        return String(content[startRange.upperBound..<endRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func inferTags(summary: String, files: [String], decisions: [String]) -> [String] {
+        var tags = Set<String>()
+        let combined = (summary + " " + files.joined(separator: " ") + " " + decisions.joined(separator: " ")).lowercased()
+
+        if combined.contains("audio") || combined.contains("sound") || combined.contains("avaudio") {
+            tags.insert("Audio")
+        }
+        if combined.contains("screen") || combined.contains("capture") || combined.contains("display") {
+            tags.insert("ScreenCapture")
+        }
+        if combined.contains("ui") || combined.contains("view") || combined.contains("studio") || combined.contains("theme") {
+            tags.insert("UI/Design")
+        }
+        if combined.contains("wifi") || combined.contains("wi-fi") || combined.contains("network") || combined.contains("multicast") {
+            tags.insert("Network")
+        }
+        if combined.contains("dmg") || combined.contains("build") || combined.contains("sign") || combined.contains("release") {
+            tags.insert("Build/DMG")
+        }
+        if combined.contains("memory") || combined.contains("agent") || combined.contains("rule") || combined.contains("directive") {
+            tags.insert("Agent Memory")
+        }
+
+        return Array(tags).sorted()
+    }
+
+    private func auditProjectRules(targetDir: String) {
+        var audit = ProjectRuleAudit()
+        audit.hasAgentMemory = FileManager.default.fileExists(atPath: "\(targetDir)/AGENT_MEMORY.md")
+        audit.hasClaudeRules = FileManager.default.fileExists(atPath: "\(targetDir)/CLAUDE.md")
+        audit.hasCursorRules = FileManager.default.fileExists(atPath: "\(targetDir)/.cursorrules") || FileManager.default.fileExists(atPath: "\(targetDir)/.cursor/rules")
+        audit.hasWindsurfRules = FileManager.default.fileExists(atPath: "\(targetDir)/.windsurfrules")
+        audit.hasOpenCodeRules = FileManager.default.fileExists(atPath: "\(targetDir)/.opencode/rules/focusin_directive.md") || FileManager.default.fileExists(atPath: "\(targetDir)/.opencode/rules")
+        self.currentProjectAudit = audit
+    }
+
+    // MARK: - Prompt Context Generator
+
+    public func buildPromptContext() -> String {
+        var lines: [String] = []
+        let projName = URL(fileURLWithPath: currentProjectPath).lastPathComponent
+        lines.append("# 🧠 Agent Context Brief: \(projName)")
+        lines.append("> **專案目錄 Project**: `\(currentProjectPath)`")
+        lines.append("> **生成時間 Timestamp**: `\(Date())`\n")
+
+        lines.append("## 🎯 核心開工準則 (FocusIn Directive)")
+        lines.append("""
+        1. 每次開工前，優先從 shared memory 搜尋本 Focusin 專案相關：架構約束、Swift 規範、AVAudioEngine 踩坑、過往失敗方案。
+        2. 每完成一輪重要決策、找到 bug 根因、確認一個架構選擇，自動寫入 shared memory，標記來源 Agent（OpenCode / OMO）。
+        3. 長期高價值原則：不要記瑣碎對話，只存長期有用知識。
+        """)
+
+        if !projectActions.isEmpty {
+            lines.append("\n## 🕒 最近 Agent 執行歷史 (Recent Actions)")
+            for action in projectActions.prefix(3) {
+                lines.append("### 🔹 @\(action.agent): \(action.summary)")
+                if !action.filesTouched.isEmpty {
+                    lines.append("- **異動檔案**: `\(action.filesTouched.joined(separator: "`, `"))`")
+                }
+                if !action.keyDecisions.isEmpty {
+                    lines.append("- **核心決策**:")
+                    for dec in action.keyDecisions.prefix(3) {
+                        lines.append("  - \(dec)")
+                    }
+                }
+            }
+        }
+
+        if !currentSectors.reflectiveNotes.isEmpty {
+            lines.append("\n## 🚫 防踩坑與已知問題 (Avoid Gotchas)")
+            let snippet = currentSectors.reflectiveNotes.components(separatedBy: "\n").prefix(20).joined(separator: "\n")
+            lines.append(snippet)
+        }
+
+        return lines.joined(separator: "\n")
+    }
+
+    public func copyPromptContextToClipboard() {
+        let text = buildPromptContext()
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        addLog("✔ 已複製 Agent 開工 Context 到系統剪貼簿！", isSuccess: true)
     }
 
     private func checkDaemonConnection() async {
@@ -460,7 +737,6 @@ public class DaemonClient: ObservableObject {
         self.statusMessage = "正在執行跨 Agent 雙向全同步..."
         addLog("⚡️ 觸發跨 Agent 雙向全同步 (MCP + Skills + Memory)...")
 
-        // 1. If daemon is running, call POST /api/sync
         var syncedViaDaemon = false
         do {
             let url = daemonBaseURL.appendingPathComponent("/api/sync")
@@ -478,13 +754,11 @@ public class DaemonClient: ObservableObject {
             syncedViaDaemon = false
         }
 
-        // 2. If daemon was not reachable, execute the real node sync CLI directly via Process
         if !syncedViaDaemon {
             addLog("ℹ Daemon 未在背景監聽，改由本機原生引擎直接執行同步指令...")
             await executeLocalCliSync()
         }
 
-        // 3. Immediately re-scan real filesystem and refresh all UI state
         refreshRealSystemState()
         self.overview.lastSyncTime = Date()
         self.isSyncing = false
@@ -498,7 +772,6 @@ public class DaemonClient: ObservableObject {
                 let process = Process()
                 process.executableURL = URL(fileURLWithPath: "/bin/zsh")
 
-                // Locate bin.js or node script
                 let possibleScriptPaths = [
                     Bundle.main.resourcePath.map { "\($0)/dist/bin.js" } ?? "",
                     "/Users/marco/Documents/skillmcpsync/dist/bin.js"
@@ -510,7 +783,6 @@ public class DaemonClient: ObservableObject {
                     break
                 }
 
-                // Command to execute
                 let cmd = "export PATH=\"$PATH:/usr/local/bin:/opt/homebrew/bin:$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node 2>/dev/null | tail -n 1)/bin\"; node \"\(scriptPath)\" sync"
 
                 process.arguments = ["-l", "-c", cmd]
@@ -674,7 +946,16 @@ public class DaemonClient: ObservableObject {
 
         let dateStr = ISO8601DateFormatter().string(from: Date())
         let filesFormatted = files.isEmpty ? "" : "\n  - **Files Touched**: `\(files.replacingOccurrences(of: ",", with: "`, `"))`"
-        let decisionsFormatted = decisions.isEmpty ? "" : "\n  - **Key Decisions**: \(decisions)"
+
+        var decisionsFormatted = ""
+        if !decisions.isEmpty {
+            let parts = decisions.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+            if parts.count > 1 {
+                decisionsFormatted = "\n  - **Key Decisions**:\n" + parts.map { "    - \($0)" }.joined(separator: "\n")
+            } else {
+                decisionsFormatted = "\n  - **Key Decisions**: \(decisions)"
+            }
+        }
 
         let newLog = """
         ### 🔹 [\(dateStr)] @\(agent)
@@ -723,7 +1004,7 @@ public class DaemonClient: ObservableObject {
         }
         lines.append("\n---\n## 🎯 FocusIn 專案開工核心準則")
         lines.append("""
-        1. 每次開工前，優先從 shared memory 搜尋本 FocusIn 專案相關：架構約束、Swift 規範、AVAudioEngine 踩坑、過往失敗方案。
+        1. 每次開工前，優先從 shared memory 搜尋本 Focusin 專案相關：架構約束、Swift 規範、AVAudioEngine 踩坑、過往失敗方案。
         2. 每完成一輪重要決策、找到 bug 根因、確認一個架構選擇，自動寫入 shared memory，標記來源 Agent（OpenCode / OMO）。
         3. 長期高價值原則：不要記瑣碎對話，只存長期有用知識。
         """)

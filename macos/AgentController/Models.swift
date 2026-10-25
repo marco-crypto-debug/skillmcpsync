@@ -160,26 +160,83 @@ public struct MemoryEntryItem: Identifiable, Codable, Hashable {
     }
 }
 
+public struct RecentProjectItem: Identifiable, Codable, Hashable {
+    public var id: String { path }
+    public var name: String
+    public var path: String
+    public var lastVisited: Date
+    public var hasMemoryFile: Bool
+    public var actionCount: Int
+    public var isPinned: Bool
+
+    public init(
+        name: String,
+        path: String,
+        lastVisited: Date = Date(),
+        hasMemoryFile: Bool = false,
+        actionCount: Int = 0,
+        isPinned: Bool = false
+    ) {
+        self.name = name
+        self.path = path
+        self.lastVisited = lastVisited
+        self.hasMemoryFile = hasMemoryFile
+        self.actionCount = actionCount
+        self.isPinned = isPinned
+    }
+}
+
+public struct ProjectRuleAudit: Hashable {
+    public var hasAgentMemory: Bool = false
+    public var hasClaudeRules: Bool = false
+    public var hasCursorRules: Bool = false
+    public var hasWindsurfRules: Bool = false
+    public var hasOpenCodeRules: Bool = false
+
+    public var allCompliant: Bool {
+        hasAgentMemory && hasClaudeRules && hasCursorRules && hasWindsurfRules && hasOpenCodeRules
+    }
+
+    public var missingCount: Int {
+        var count = 0
+        if !hasAgentMemory { count += 1 }
+        if !hasClaudeRules { count += 1 }
+        if !hasCursorRules { count += 1 }
+        if !hasWindsurfRules { count += 1 }
+        if !hasOpenCodeRules { count += 1 }
+        return count
+    }
+}
+
+public struct ProjectCognitiveSectors: Hashable {
+    public var semanticMemory: String = ""
+    public var proceduralRules: String = ""
+    public var reflectiveNotes: String = ""
+}
+
 public struct ProjectActionItem: Identifiable, Codable, Hashable {
-    public var id: String { "\(timestamp.timeIntervalSince1970)_\(agent)" }
-    public var timestamp: Date
+    public var id: String { "\(timestampStr)_\(agent)_\(summary.prefix(20))" }
+    public var timestampStr: String
     public var agent: String
     public var summary: String
     public var filesTouched: [String]
-    public var keyDecisions: String
+    public var keyDecisions: [String]
+    public var tags: [String]
 
     public init(
-        timestamp: Date = Date(),
+        timestampStr: String = "",
         agent: String,
         summary: String,
         filesTouched: [String] = [],
-        keyDecisions: String = ""
+        keyDecisions: [String] = [],
+        tags: [String] = []
     ) {
-        self.timestamp = timestamp
+        self.timestampStr = timestampStr
         self.agent = agent
         self.summary = summary
         self.filesTouched = filesTouched
         self.keyDecisions = keyDecisions
+        self.tags = tags
     }
 }
 
