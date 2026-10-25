@@ -3,12 +3,13 @@ import SwiftUI
 @main
 struct AgentControllerApp: App {
     @State private var selectedItem: NavigationItem? = .overview
+    @ObservedObject var langManager = LanguageManager.shared
 
     var body: some Scene {
         WindowGroup {
             NavigationSplitView {
                 SidebarView(selection: $selectedItem)
-                    .frame(minWidth: 200, idealWidth: 230)
+                    .frame(minWidth: 210, idealWidth: 240)
             } detail: {
                 switch selectedItem {
                 case .overview, .none:
@@ -23,28 +24,43 @@ struct AgentControllerApp: App {
                     MemoryView()
                 }
             }
-            .frame(minWidth: 840, minHeight: 560)
+            .frame(minWidth: 860, minHeight: 580)
         }
         .commands {
             CommandGroup(replacing: .newItem) {
-                Button("⚡️ 一鍵同步所有 Agent") {
+                Button(L10n.tr(.btnSyncAll)) {
                     Task {
                         await DaemonClient.shared.triggerSync()
                     }
                 }
                 .keyboardShortcut("s", modifiers: [.command])
 
-                Button("重新整理狀態") {
+                Button(L10n.tr(.btnRefreshState)) {
                     Task {
                         await DaemonClient.shared.refreshAll()
                     }
                 }
                 .keyboardShortcut("r", modifiers: [.command])
 
-                Button("匯出 MEMORY.md 至桌面") {
+                Button(L10n.tr(.btnExportDesktop)) {
                     _ = DaemonClient.shared.exportMemoryMarkdownToDesktop()
                 }
                 .keyboardShortcut("e", modifiers: [.command])
+            }
+
+            CommandMenu("Language / 語言") {
+                ForEach(AppLanguage.allCases) { lang in
+                    Button(action: {
+                        langManager.setLanguage(lang)
+                    }) {
+                        HStack {
+                            Text("\(lang.flag) \(lang.displayName)")
+                            if langManager.currentLanguage == lang {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
             }
         }
     }

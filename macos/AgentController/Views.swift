@@ -11,6 +11,16 @@ public enum NavigationItem: String, CaseIterable, Identifiable {
 
     public var id: String { rawValue }
 
+    public var localizedTitle: String {
+        switch self {
+        case .overview: return L10n.tr(.navOverview)
+        case .servers: return L10n.tr(.navServers)
+        case .skillsAndTools: return L10n.tr(.navSkillsAndTools)
+        case .projectMemory: return L10n.tr(.navProjectMemory)
+        case .memory: return L10n.tr(.navSharedMemory)
+        }
+    }
+
     public var icon: String {
         switch self {
         case .overview: return "square.grid.2x2.fill"
@@ -25,17 +35,47 @@ public enum NavigationItem: String, CaseIterable, Identifiable {
 // MARK: - Overview View
 public struct OverviewView: View {
     @ObservedObject var client = DaemonClient.shared
+    @ObservedObject var langManager = LanguageManager.shared
+
+    private func formatTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .medium
+        return formatter.string(from: date)
+    }
 
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                // Top Language Switcher Bar
+                HStack {
+                    Spacer()
+                    HStack(spacing: 6) {
+                        Image(systemName: "globe")
+                            .foregroundColor(.secondary)
+                        Text(L10n.tr(.languageSetting) + ":")
+                            .font(.caption.bold())
+                            .foregroundColor(.secondary)
+                        Picker("", selection: $langManager.currentLanguage) {
+                            ForEach(AppLanguage.allCases) { lang in
+                                Text("\(lang.flag) \(lang.displayName)").tag(lang)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .frame(width: 130)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(8)
+                }
+
                 // Hero Banner
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 8) {
-                            Text("Agent Controller")
+                            Text(L10n.tr(.appTitle))
                                 .font(.system(size: 24, weight: .bold))
-                            Text("跨 Agent 雙向全同步")
+                            Text(L10n.tr(.syncHeroBadge))
                                 .font(.caption.bold())
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 3)
@@ -43,7 +83,7 @@ public struct OverviewView: View {
                                 .foregroundColor(.blue)
                                 .cornerRadius(6)
                         }
-                        Text("按一個按鈕，在任一 Agent 下載的 MCP、Skills 與記憶直接自動同步至所有 Agent")
+                        Text(L10n.tr(.syncHeroSubtitle))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -58,7 +98,7 @@ public struct OverviewView: View {
                             } else {
                                 Image(systemName: "bolt.fill")
                             }
-                            Text(client.isSyncing ? "正在雙向同步中..." : "⚡️ 一鍵同步所有 Agent")
+                            Text(client.isSyncing ? L10n.tr(.btnSyncing) : L10n.tr(.btnSyncAll))
                                 .font(.headline)
                         }
                         .padding(.horizontal, 18)
@@ -75,10 +115,10 @@ public struct OverviewView: View {
                 // Installed Agents Cards Grid
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Text("已偵測本機 Agents")
+                        Text(L10n.tr(.sectionDetectedAgents))
                             .font(.headline)
                         Spacer()
-                        Text("\(client.agents.filter { $0.isInstalled }.count) / \(client.agents.count) 已安裝")
+                        Text(L10n.tr(.agentInstalledCount(client.agents.filter { $0.isInstalled }.count, client.agents.count)))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -92,10 +132,10 @@ public struct OverviewView: View {
 
                 // Metrics Grid
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
-                    MetricCard(title: "MCP Servers", count: "\(client.servers.count)", icon: "server.rack", color: .purple)
-                    MetricCard(title: "Active Skills", count: "\(client.skills.count)", icon: "sparkles", color: .green)
-                    MetricCard(title: "Synced Tools", count: "\(client.tools.count)", icon: "hammer.fill", color: .orange)
-                    MetricCard(title: "Shared Memory", count: "\(client.memoryEntries.count)", icon: "brain", color: .blue)
+                    MetricCard(title: L10n.tr(.metricServers), count: "\(client.servers.count)", icon: "server.rack", color: .purple)
+                    MetricCard(title: L10n.tr(.metricSkills), count: "\(client.skills.count)", icon: "sparkles", color: .green)
+                    MetricCard(title: L10n.tr(.metricTools), count: "\(client.tools.count)", icon: "hammer.fill", color: .orange)
+                    MetricCard(title: L10n.tr(.metricSharedMemory), count: "\(client.memoryEntries.count)", icon: "brain", color: .blue)
                 }
 
                 // Quick Action Bar
@@ -103,14 +143,14 @@ public struct OverviewView: View {
                     Button(action: {
                         _ = client.exportMemoryMarkdownToDesktop()
                     }) {
-                        Label("匯出 MEMORY.md 至桌面", systemImage: "arrow.down.doc.fill")
+                        Label(L10n.tr(.btnExportDesktop), systemImage: "arrow.down.doc.fill")
                     }
                     .buttonStyle(.bordered)
 
                     Button(action: {
                         client.injectFocusinPrompt()
                     }) {
-                        Label("注入 FocusIn 開工準則", systemImage: "target")
+                        Label(L10n.tr(.btnInjectFocusin), systemImage: "target")
                     }
                     .buttonStyle(.bordered)
 
@@ -119,7 +159,7 @@ public struct OverviewView: View {
                     Button(action: {
                         client.refreshRealSystemState()
                     }) {
-                        Label("重新整理本機狀態", systemImage: "arrow.clockwise")
+                        Label(L10n.tr(.btnRefreshState), systemImage: "arrow.clockwise")
                     }
                     .buttonStyle(.borderless)
                 }
@@ -130,11 +170,11 @@ public struct OverviewView: View {
                     HStack {
                         Image(systemName: "terminal.fill")
                             .foregroundColor(.secondary)
-                        Text("即時同步日誌 (Sync Activity Console)")
+                        Text(L10n.tr(.consoleTitle))
                             .font(.headline)
                         Spacer()
                         if let lastSync = client.overview.lastSyncTime {
-                            Text("最後同步: \(lastSync, style: .time)")
+                            Text(L10n.tr(.lastSync(formatTime(lastSync))))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -142,7 +182,7 @@ public struct OverviewView: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         if client.syncLogs.isEmpty {
-                            Text("點擊「⚡️ 一鍵同步所有 Agent」開始執行全機 MCP、Skills 與記憶同步...")
+                            Text(L10n.tr(.consolePlaceholder))
                                 .font(.system(.caption, design: .monospaced))
                                 .foregroundColor(.secondary)
                                 .padding(.vertical, 8)
@@ -176,6 +216,7 @@ public struct OverviewView: View {
 // MARK: - Agent Card View
 struct AgentCardView: View {
     let agent: AgentStatusItem
+    @ObservedObject var langManager = LanguageManager.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -187,7 +228,7 @@ struct AgentCardView: View {
                     .font(.headline)
                 Spacer()
                 if agent.isInstalled {
-                    Text("已安裝")
+                    Text(L10n.tr(.badgeInstalled))
                         .font(.caption2.bold())
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -195,7 +236,7 @@ struct AgentCardView: View {
                         .foregroundColor(.green)
                         .cornerRadius(4)
                 } else {
-                    Text("未偵測")
+                    Text(L10n.tr(.badgeNotDetected))
                         .font(.caption2)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -251,6 +292,7 @@ struct MetricCard: View {
 // MARK: - Servers View
 public struct ServersView: View {
     @ObservedObject var client = DaemonClient.shared
+    @ObservedObject var langManager = LanguageManager.shared
     @State private var searchText: String = ""
 
     var filteredServers: [MCPServerItem] {
@@ -262,17 +304,17 @@ public struct ServersView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("MCP Servers")
+                    Text(L10n.tr(.serversTitle))
                         .font(.title2.bold())
-                    Text("全機已偵測並同步的 MCP 伺服器端點")
+                    Text(L10n.tr(.serversSubtitle))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
                 Spacer()
-                TextField("搜尋 MCP 伺服器...", text: $searchText)
+                TextField(L10n.tr(.searchServersPlaceholder), text: $searchText)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 220)
-                Button("重新整理") {
+                Button(L10n.tr(.btnRefresh)) {
                     client.refreshRealSystemState()
                 }
             }
@@ -311,7 +353,7 @@ public struct ServersView: View {
                     if let cmd = srv.command {
                         let fullCmd = "\(cmd) \((srv.args ?? []).joined(separator: " "))"
                         HStack {
-                            Text("指令:")
+                            Text(L10n.tr(.labelCommand))
                                 .font(.caption.bold())
                                 .foregroundColor(.secondary)
                             Text(fullCmd)
@@ -338,6 +380,7 @@ public struct ServersView: View {
 // MARK: - Skills & Tools View
 public struct SkillsToolsView: View {
     @ObservedObject var client = DaemonClient.shared
+    @ObservedObject var langManager = LanguageManager.shared
     @State private var selectedTab: Int = 0
     @State private var selectedSkill: SkillItem?
 
@@ -345,16 +388,16 @@ public struct SkillsToolsView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Skills & Tools")
+                    Text(L10n.tr(.skillsTitle))
                         .font(.title2.bold())
-                    Text("本機聚合之技能模組與跨 Agent 工具")
+                    Text(L10n.tr(.skillsSubtitle))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
                 Spacer()
                 Picker("", selection: $selectedTab) {
-                    Text("Skills (\(client.skills.count))").tag(0)
-                    Text("Tools (\(client.tools.count))").tag(1)
+                    Text(L10n.tr(.tabSkills(client.skills.count))).tag(0)
+                    Text(L10n.tr(.tabTools(client.tools.count))).tag(1)
                 }
                 .pickerStyle(.segmented)
                 .frame(width: 220)
@@ -384,7 +427,7 @@ public struct SkillsToolsView: View {
                         }
                         Spacer()
                         if !skill.content.isEmpty {
-                            Button("檢視 SKILL.md") {
+                            Button(L10n.tr(.btnViewSkillMd)) {
                                 selectedSkill = skill
                             }
                             .buttonStyle(.bordered)
@@ -422,7 +465,7 @@ public struct SkillsToolsView: View {
                     Text("SKILL.md: \(skill.name)")
                         .font(.headline)
                     Spacer()
-                    Button("關閉") { selectedSkill = nil }
+                    Button(L10n.tr(.btnClose)) { selectedSkill = nil }
                 }
                 ScrollView {
                     Text(skill.content)
@@ -442,6 +485,7 @@ public struct SkillsToolsView: View {
 // MARK: - Project Memory View (OpenMemory & FocusIn)
 public struct ProjectMemoryView: View {
     @ObservedObject var client = DaemonClient.shared
+    @ObservedObject var langManager = LanguageManager.shared
 
     @State private var agentName: String = "OpenCode"
     @State private var actionSummary: String = ""
@@ -456,14 +500,14 @@ public struct ProjectMemoryView: View {
                 // Header & Project Picker
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("專案記憶 (Project AGENT_MEMORY.md)")
+                        Text(L10n.tr(.projectMemoryTitle))
                             .font(.title2.bold())
-                        Text("基於 OpenMemory 認知架構：所有 Agent 在執行前強制手動閱讀歷史決策與踩坑")
+                        Text(L10n.tr(.projectMemorySubtitle))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
                     Spacer()
-                    Button("選擇專案目錄...") {
+                    Button(L10n.tr(.btnChooseProjectFolder)) {
                         selectProjectFolder()
                     }
                     .buttonStyle(.bordered)
@@ -473,13 +517,13 @@ public struct ProjectMemoryView: View {
                 HStack {
                     Image(systemName: "folder.badge.gearshape")
                         .foregroundColor(.blue)
-                    Text("當前專案目錄:")
+                    Text(L10n.tr(.labelCurrentProject))
                         .font(.caption.bold())
                     Text(client.currentProjectPath)
                         .font(.system(size: 12, design: .monospaced))
                         .foregroundColor(.blue)
                     Spacer()
-                    Button("重新讀取") {
+                    Button(L10n.tr(.btnReload)) {
                         client.refreshProjectMemory()
                     }
                     .font(.caption)
@@ -494,27 +538,23 @@ public struct ProjectMemoryView: View {
                         Image(systemName: "target")
                             .foregroundColor(.red)
                             .font(.headline)
-                        Text("🎯 FocusIn 專案 Agent 開工核心準則")
+                        Text(L10n.tr(.focusinDirectiveTitle))
                             .font(.headline)
                         Spacer()
-                        Button("一鍵注入開工準則至本專案") {
+                        Button(L10n.tr(.btnInjectFocusinToProject)) {
                             client.injectFocusinPrompt()
-                            statusToast = "✔ 已將 FocusIn 開工準則注入至 CLAUDE.md, .cursorrules, .windsurfrules, .opencode"
+                            statusToast = "✔ " + L10n.tr(.btnInjectFocusinToProject)
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(.red)
                     }
 
-                    Text("""
-                    每次開工前，優先從 shared memory 搜尋本 Focusin 專案相關：架構約束、Swift 規範、AVAudioEngine 踩坑、過往失敗方案。
-                    每完成一輪重要決策、找到 bug 根因、確認一個架構選擇，自動寫入 shared memory，標記來源 Agent（OpenCode / OMO）。
-                    不要記瑣碎對話，只存長期有用知識。
-                    """)
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
-                    .padding(10)
-                    .background(Color.red.opacity(0.08))
-                    .cornerRadius(8)
+                    Text(L10n.tr(.focusinDirectiveBody))
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .padding(10)
+                        .background(Color.red.opacity(0.08))
+                        .cornerRadius(8)
                 }
                 .padding()
                 .background(Color(NSColor.controlBackgroundColor))
@@ -529,19 +569,19 @@ public struct ProjectMemoryView: View {
                     HStack {
                         Image(systemName: "clock.arrow.circlepath")
                             .foregroundColor(.purple)
-                        Text("🕒 1. Episodic Action Timeline (以前的 Agent 做了些什麼)")
+                        Text(L10n.tr(.episodicTimelineTitle))
                             .font(.headline)
                         Spacer()
-                        Text("共 \(client.projectActions.count) 筆歷史紀錄")
+                        Text(L10n.tr(.episodicRecordsCount(client.projectActions.count)))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
 
                     if client.projectActions.isEmpty {
                         VStack(spacing: 8) {
-                            Text("此專案尚未記錄歷史動作。")
+                            Text(L10n.tr(.emptyTimelinePrompt))
                                 .foregroundColor(.secondary)
-                            Button("初始化專案記憶並注入 Agent 強制讀取規則") {
+                            Button(L10n.tr(.btnInitProjectMemory)) {
                                 client.injectFocusinPrompt()
                             }
                             .buttonStyle(.borderedProminent)
@@ -569,7 +609,7 @@ public struct ProjectMemoryView: View {
 
                                     if !action.filesTouched.isEmpty {
                                         HStack(spacing: 4) {
-                                            Text("影響檔案:")
+                                            Text(L10n.tr(.labelFilesTouched))
                                                 .font(.caption)
                                                 .foregroundColor(.secondary)
                                             ForEach(action.filesTouched, id: \.self) { file in
@@ -585,7 +625,7 @@ public struct ProjectMemoryView: View {
 
                                     if !action.keyDecisions.isEmpty {
                                         HStack(alignment: .top, spacing: 4) {
-                                            Text("核心決策:")
+                                            Text(L10n.tr(.labelKeyDecisions))
                                                 .font(.caption.bold())
                                                 .foregroundColor(.secondary)
                                             Text(action.keyDecisions)
@@ -604,11 +644,11 @@ public struct ProjectMemoryView: View {
 
                 // Quick Action Logger Form
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("✍️ Agent 完成任務寫入記憶")
+                    Text(L10n.tr(.quickLogTitle))
                         .font(.headline)
 
                     HStack(spacing: 12) {
-                        Picker("來源 Agent:", selection: $agentName) {
+                        Picker(L10n.tr(.labelSourceAgent), selection: $agentName) {
                             Text("OpenCode").tag("OpenCode")
                             Text("OMO (Oh-My-OpenCode)").tag("OMO")
                             Text("Claude").tag("Claude")
@@ -617,21 +657,21 @@ public struct ProjectMemoryView: View {
                         }
                         .frame(width: 260)
 
-                        TextField("完成任務簡述 (Summary)", text: $actionSummary)
+                        TextField(L10n.tr(.placeholderSummary), text: $actionSummary)
                             .textFieldStyle(.roundedBorder)
                     }
 
                     HStack(spacing: 12) {
-                        TextField("修改檔案 (以逗號分隔，例如: AudioEngine.swift, Network.swift)", text: $filesTouched)
+                        TextField(L10n.tr(.placeholderFiles), text: $filesTouched)
                             .textFieldStyle(.roundedBorder)
 
-                        TextField("核心架構決策 / 根因分析", text: $keyDecisions)
+                        TextField(L10n.tr(.placeholderDecisions), text: $keyDecisions)
                             .textFieldStyle(.roundedBorder)
                     }
 
                     HStack {
                         Spacer()
-                        Button("寫入專案記憶 (AGENT_MEMORY.md)") {
+                        Button(L10n.tr(.btnLogAction)) {
                             guard !actionSummary.isEmpty else { return }
                             client.logProjectAction(
                                 agent: agentName,
@@ -642,7 +682,7 @@ public struct ProjectMemoryView: View {
                             actionSummary = ""
                             filesTouched = ""
                             keyDecisions = ""
-                            statusToast = "✔ 已成功將操作日誌寫入 AGENT_MEMORY.md！"
+                            statusToast = "✔ " + L10n.tr(.btnLogAction)
                         }
                         .buttonStyle(.borderedProminent)
                         .disabled(actionSummary.isEmpty)
@@ -653,7 +693,7 @@ public struct ProjectMemoryView: View {
                 .cornerRadius(12)
 
                 // Raw Markdown Inspector Toggle
-                DisclosureGroup("📄 檢視 / 編輯 AGENT_MEMORY.md 原檔", isExpanded: $showRawEditor) {
+                DisclosureGroup(L10n.tr(.rawEditorTitle), isExpanded: $showRawEditor) {
                     TextEditor(text: $client.projectMemoryRawText)
                         .font(.system(.caption, design: .monospaced))
                         .frame(minHeight: 200)
@@ -663,11 +703,11 @@ public struct ProjectMemoryView: View {
 
                     HStack {
                         Spacer()
-                        Button("儲存變更") {
+                        Button(L10n.tr(.btnSaveChanges)) {
                             let path = "\(client.currentProjectPath)/AGENT_MEMORY.md"
                             try? client.projectMemoryRawText.write(toFile: path, atomically: true, encoding: .utf8)
                             client.refreshProjectMemory()
-                            statusToast = "已儲存 AGENT_MEMORY.md！"
+                            statusToast = "✔ " + L10n.tr(.btnSaveChanges)
                         }
                         .buttonStyle(.bordered)
                     }
@@ -701,20 +741,21 @@ public struct ProjectMemoryView: View {
 // MARK: - Memory View
 public struct MemoryView: View {
     @ObservedObject var client = DaemonClient.shared
+    @ObservedObject var langManager = LanguageManager.shared
 
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("全域跨 Agent 共享記憶庫 (Shared Memory)")
+                        Text(L10n.tr(.sharedMemoryTitle))
                             .font(.title2.bold())
-                        Text("存放跨專案、長期高價值架構事實與防踩坑決策")
+                        Text(L10n.tr(.sharedMemorySubtitle))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
                     Spacer()
-                    Button("匯出 MEMORY.md 至桌面") {
+                    Button(L10n.tr(.btnExportDesktop)) {
                         _ = client.exportMemoryMarkdownToDesktop()
                     }
                     .buttonStyle(.borderedProminent)
@@ -726,9 +767,9 @@ public struct MemoryView: View {
                         Image(systemName: "brain.head.profile")
                             .font(.system(size: 40))
                             .foregroundColor(.secondary)
-                        Text("共享記憶庫目前無跨專案全域條目")
+                        Text(L10n.tr(.emptySharedMemoryTitle))
                             .font(.headline)
-                        Text("執行重要架構決定後，條目將透過 sync 自動廣播給所有 Agent。")
+                        Text(L10n.tr(.emptySharedMemorySubtitle))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }

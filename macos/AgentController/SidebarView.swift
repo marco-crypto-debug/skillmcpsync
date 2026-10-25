@@ -3,12 +3,13 @@ import SwiftUI
 public struct SidebarView: View {
     @Binding var selection: NavigationItem?
     @ObservedObject var client = DaemonClient.shared
+    @ObservedObject var langManager = LanguageManager.shared
 
     public var body: some View {
         List(NavigationItem.allCases, selection: $selection) { item in
             NavigationLink(value: item) {
                 HStack {
-                    Label(item.rawValue, systemImage: item.icon)
+                    Label(item.localizedTitle, systemImage: item.icon)
                     Spacer()
                     switch item {
                     case .servers:
@@ -48,10 +49,31 @@ public struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
-        .navigationTitle("Agent Controller")
+        .navigationTitle(L10n.tr(.appTitle))
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 8) {
+            VStack(spacing: 10) {
                 Divider()
+
+                // Language Setting Menu
+                HStack(spacing: 6) {
+                    Image(systemName: "globe")
+                        .foregroundColor(.secondary)
+                        .font(.caption)
+                    Text(L10n.tr(.languageSetting))
+                        .font(.caption2.bold())
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Picker("", selection: $langManager.currentLanguage) {
+                        ForEach(AppLanguage.allCases) { lang in
+                            Text("\(lang.flag) \(lang.displayName)").tag(lang)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(width: 120)
+                }
+                .padding(.horizontal, 14)
+
                 HStack(spacing: 8) {
                     Circle()
                         .fill(client.isConnected ? Color.green : Color.blue)
