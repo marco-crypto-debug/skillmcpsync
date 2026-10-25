@@ -81,6 +81,7 @@ public struct L10n {
         case metricSharedMemory
         case btnExportDesktop
         case btnInjectFocusin
+        case btnInjectProjectDirective
         case btnRefreshState
         case consoleTitle
         case consolePlaceholder
@@ -107,6 +108,9 @@ public struct L10n {
         case btnChooseProjectFolder
         case labelCurrentProject
         case btnReload
+        case projectDirectiveTitle(String)
+        case projectDirectiveBody(String)
+        case btnInjectDirectiveToProject
         case focusinDirectiveTitle
         case btnInjectFocusinToProject
         case focusinDirectiveBody
@@ -175,6 +179,7 @@ public struct L10n {
         case filterAllSources
         case btnCopySkillTag
         case btnDeleteSkill
+        case btnCopyProjectDirective
         case btnCopyFocusinPrompt
         case toastCopied
 
@@ -317,6 +322,12 @@ public struct L10n {
                 case .simplifiedChinese: return "注入 FocusIn 开工准则"
                 case .english: return "Inject FocusIn Directive"
                 }
+            case .btnInjectProjectDirective:
+                switch lang {
+                case .traditionalChinese: return "注入專案開工準則"
+                case .simplifiedChinese: return "注入项目开工准则"
+                case .english: return "Inject Project Directive"
+                }
             case .btnRefreshState:
                 switch lang {
                 case .traditionalChinese: return "重新整理本機狀態"
@@ -442,6 +453,27 @@ public struct L10n {
                 case .traditionalChinese: return "重新讀取"
                 case .simplifiedChinese: return "重新读取"
                 case .english: return "Reload"
+                }
+            case .projectDirectiveTitle(let name):
+                switch lang {
+                case .traditionalChinese: return "🎯 \(name) 專案 Agent 開工準則"
+                case .simplifiedChinese: return "🎯 \(name) 项目 Agent 开工准则"
+                case .english: return "🎯 \(name) Project Agent Directive"
+                }
+            case .projectDirectiveBody(let name):
+                switch lang {
+                case .traditionalChinese:
+                    return "每次開工前，優先查閱 \(name) 的 AGENT_MEMORY.md 與 shared memory：了解架構約束、專案規範、過往失敗方案與踩坑記錄。\n每完成重要決策、修復 bug 或確認架構，自動將精簡總結寫入專案記憶庫（標記來源 Agent）。\n不記錄閒聊瑣事，只留存長遠有用的專案知識。"
+                case .simplifiedChinese:
+                    return "每次开工前，优先查阅 \(name) 的 AGENT_MEMORY.md 与 shared memory：了解架构约束、项目规范、过往失败方案与踩坑记录。\n每完成重要决策、修复 bug 或确认架构，自动将精简总结写入项目记忆库（标记来源 Agent）。\n不记录闲聊琐事，只留存长远有用的项目知识。"
+                case .english:
+                    return "Before starting work, always inspect \(name)'s AGENT_MEMORY.md and shared memory: review architecture constraints, project conventions, past failed attempts, and gotchas.\nAfter key decisions, bug fixes, or architectural choices, write a concise summary into project memory tagging the source agent.\nOnly persist high-value, long-term project knowledge."
+                }
+            case .btnInjectDirectiveToProject:
+                switch lang {
+                case .traditionalChinese: return "一鍵注入開工準則至本專案"
+                case .simplifiedChinese: return "一键注入开工准则至本项目"
+                case .english: return "Inject Directive to Project"
                 }
             case .focusinDirectiveTitle:
                 switch lang {
@@ -833,6 +865,12 @@ public struct L10n {
                 case .traditionalChinese: return "刪除 Skill"
                 case .simplifiedChinese: return "删除 Skill"
                 case .english: return "Delete"
+                }
+            case .btnCopyProjectDirective:
+                switch lang {
+                case .traditionalChinese: return "複製開工規範提示詞"
+                case .simplifiedChinese: return "复制开工规范提示词"
+                case .english: return "Copy Directive Prompt"
                 }
             case .btnCopyFocusinPrompt:
                 switch lang {

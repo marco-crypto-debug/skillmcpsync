@@ -23,6 +23,7 @@ import {
   memoryProjectInitCommand,
   memoryProjectLogCommand,
   memoryProjectReadCommand,
+  memoryDirectiveCommand,
   memoryPromptFocusinCommand,
 } from './commands/memory.js';
 import { sync_all_resources } from './sync/sync_manager.js';
@@ -294,15 +295,16 @@ projectMemCmd
     memoryProjectReadCommand(targetPath);
   });
 
-// prompt (FocusIn directive & guidelines)
+// directive (Project agent directive & guidelines)
 memoryCmd
-  .command('focusin')
-  .description('Display FocusIn agent directive, save to shared memory, or inject into project')
+  .command('directive')
+  .alias('focusin')
+  .description('Display project agent directive, save to shared memory, or inject into project')
   .option('-i, --inject', 'Inject directive into CLAUDE.md, .cursorrules, .windsurfrules, etc.')
   .option('-p, --project <path>', 'Target project directory (default: current directory)')
   .option('-v, --vault <path>', 'Custom local vault directory path')
   .action((opts) => {
-    memoryPromptFocusinCommand(opts);
+    memoryDirectiveCommand(opts);
   });
 
 // reconcile (auto-sync tool across remote/local servers with file-lock safety)

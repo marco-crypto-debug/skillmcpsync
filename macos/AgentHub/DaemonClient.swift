@@ -91,7 +91,11 @@ public class DaemonClient: ObservableObject {
     ]
 
     // Project Memory & Recents
-    @Published public var currentProjectPath: String = "/Users/marco/Documents/FocusIn"
+    @Published public var currentProjectPath: String = "/Users/marco/Documents/skillmcpsync"
+    public var currentProjectName: String {
+        let name = URL(fileURLWithPath: currentProjectPath).lastPathComponent
+        return name.isEmpty ? "Project" : name
+    }
     @Published public var agentHubPath: String = {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return "\(home)/AgentHub"
@@ -128,31 +132,35 @@ public class DaemonClient: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: "recent_projects_v2"),
            let items = try? JSONDecoder().decode([RecentProjectItem].self, from: data), !items.isEmpty {
             self.recentProjects = items
-            if let first = items.first(where: { FileManager.default.fileExists(atPath: $0.path) }) {
+            if let saved = UserDefaults.standard.string(forKey: "active_project_path_v2"),
+               FileManager.default.fileExists(atPath: saved) {
+                self.currentProjectPath = saved
+            } else if let first = items.first(where: { FileManager.default.fileExists(atPath: $0.path) }) {
                 self.currentProjectPath = first.path
             }
         } else {
-            // Seed defaults: FocusIn & skillmcpsync
+            // Seed defaults: skillmcpsync & FocusIn
             var defaults: [RecentProjectItem] = []
-            if FileManager.default.fileExists(atPath: "/Users/marco/Documents/FocusIn") {
-                defaults.append(RecentProjectItem(
-                    name: "FocusIn",
-                    path: "/Users/marco/Documents/FocusIn",
-                    hasMemoryFile: FileManager.default.fileExists(atPath: "/Users/marco/Documents/FocusIn/AGENT_MEMORY.md"),
-                    actionCount: 8,
-                    isPinned: true
-                ))
-            }
             if FileManager.default.fileExists(atPath: "/Users/marco/Documents/skillmcpsync") {
                 defaults.append(RecentProjectItem(
                     name: "skillmcpsync",
                     path: "/Users/marco/Documents/skillmcpsync",
                     hasMemoryFile: FileManager.default.fileExists(atPath: "/Users/marco/Documents/skillmcpsync/AGENT_MEMORY.md"),
-                    actionCount: 1,
+                    actionCount: 2,
+                    isPinned: true
+                ))
+            }
+            if FileManager.default.fileExists(atPath: "/Users/marco/Documents/FocusIn") {
+                defaults.append(RecentProjectItem(
+                    name: "FocusIn",
+                    path: "/Users/marco/Documents/FocusIn",
+                    hasMemoryFile: FileManager.default.fileExists(atPath: "/Users/marco/Documents/FocusIn/AGENT_MEMORY.md"),
+                    actionCount: 9,
                     isPinned: false
                 ))
             }
             self.recentProjects = defaults
+            self.currentProjectPath = defaults.first?.path ?? "/Users/marco/Documents/skillmcpsync"
             saveRecentProjects()
         }
         scanLocalProjects()
@@ -247,6 +255,7 @@ public class DaemonClient: ObservableObject {
 
     public func switchProject(to newPath: String) {
         currentProjectPath = newPath
+        UserDefaults.standard.set(newPath, forKey: "active_project_path_v2")
         addOrUpdateRecent(path: newPath)
         refreshProjectMemory()
         addLog("📂 切換當前專案至：\(newPath)")
@@ -752,7 +761,7 @@ public class DaemonClient: ObservableObject {
         audit.hasClaudeRules = FileManager.default.fileExists(atPath: "\(targetDir)/CLAUDE.md")
         audit.hasCursorRules = FileManager.default.fileExists(atPath: "\(targetDir)/.cursorrules") || FileManager.default.fileExists(atPath: "\(targetDir)/.cursor/rules")
         audit.hasWindsurfRules = FileManager.default.fileExists(atPath: "\(targetDir)/.windsurfrules")
-        audit.hasOpenCodeRules = FileManager.default.fileExists(atPath: "\(targetDir)/.opencode/rules/focusin_directive.md") || FileManager.default.fileExists(atPath: "\(targetDir)/.opencode/rules")
+        audit.hasOpenCodeRules = FileManager.default.fileExists(atPath: "\(targetDir)/.opencode/rules/agent_memory.md") || FileManager.default.fileExists(atPath: "\(targetDir)/.opencode/rules/focusin_directive.md") || FileManager.default.fileExists(atPath: "\(targetDir)/.opencode/rules")
         self.currentProjectAudit = audit
     }
 
@@ -760,15 +769,15 @@ public class DaemonClient: ObservableObject {
 
     public func buildPromptContext() -> String {
         var lines: [String] = []
-        let projName = URL(fileURLWithPath: currentProjectPath).lastPathComponent
+        let projName = currentProjectName
         lines.append("# 🧠 Agent Context Brief: \(projName)")
         lines.append("> **專案目錄 Project**: `\(currentProjectPath)`")
         lines.append("> **生成時間 Timestamp**: `\(Date())`\n")
 
-        lines.append("## 🎯 核心開工準則 (FocusIn Directive)")
+        lines.append("## 🎯 核心開工準則 (\(projName) Directive)")
         lines.append("""
-        1. 每次開工前，優先從 shared memory 搜尋本 Focusin 專案相關：架構約束、Swift 規範、AVAudioEngine 踩坑、過往失敗方案。
-        2. 每完成一輪重要決策、找到 bug 根因、確認一個架構選擇，自動寫入 shared memory，標記來源 Agent（OpenCode / OMO）。
+        1. 每次開工前，優先從 AGENT_MEMORY.md 與 shared memory 搜尋本專案相關：架構約束、專案約定、過往失敗方案與踩坑記錄。
+        2. 每完成一輪重要決策、找到 bug 根因、確認一個架構選擇，自動寫入專案記憶庫（標記來源 Agent）。
         3. 長期高價值原則：不要記瑣碎對話，只存長期有用知識。
         """)
 
@@ -926,36 +935,40 @@ public class DaemonClient: ObservableObject {
         )
     }
 
-    // MARK: - Memory & FocusIn Directives
+    // MARK: - Memory & Project Directives
 
-    public var focusinDirectiveText: String {
+    public var currentProjectDirectiveText: String {
+        let name = currentProjectName
         return """
-        # 🎯 FocusIn 專案 Agent 開工核心準則 (FocusIn Agent Directive)
-        > ⚠️ 所有 Agent (OpenCode / OMO / Claude / Cursor) 必讀核心約束：
-        > 1. 每次開工前，優先從 shared memory 搜尋本 FocusIn 專案相關：
-        >    - 🏛 架構約束 (TeacherApp/StudentApp 邊界、Network.framework、零依賴架構)
-        >    - 🍎 Swift 規範 (Swift 5/6、並發安全、MainActor、記憶體管理)
-        >    - 🎙 AVAudioEngine 踩坑 (Audio engine reset、format mismatch、buffer overruns)
-        >    - 🚫 過往失敗方案 (避免重複過去嘗試失敗的做法)
+        # 🎯 \(name) 專案 Agent 開工核心準則 (\(name) Agent Directive)
+        > ⚠️ 所有 Agent (OpenCode / Claude / Cursor / Windsurf) 必讀核心約束：
+        > 1. 每次開工前，優先從 AGENT_MEMORY.md 與 shared memory 搜尋本專案相關：
+        >    - 🏛 架構約束 (專案結構邊界、技術棧規範、依賴與約定)
+        >    - 🛠 工作規範 (型別檢查、代碼風格、測試驗證規範)
+        >    - 🚫 過往失敗方案與踩坑記錄 (避免重複過去嘗試失敗的做法)
         > 2. 每完成一輪重要決策、找到 bug 根因、確認一個架構選擇：
-        >    - 自動寫入 shared memory / AGENT_MEMORY.md，標記來源 Agent（OpenCode / OMO）。
+        >    - 自動寫入專案記憶庫 / AGENT_MEMORY.md，標記來源 Agent（OpenCode / Claude / Cursor / Windsurf）。
         > 3. 長期高價值原則：不要記瑣碎對話，只存長期有用知識。
         """
     }
 
-    public func injectFocusinPrompt(toPath: String? = nil) {
+    public var focusinDirectiveText: String {
+        return currentProjectDirectiveText
+    }
+
+    public func injectProjectDirective(toPath: String? = nil) {
         let targetDir = toPath ?? currentProjectPath
+        let projectName = URL(fileURLWithPath: targetDir).lastPathComponent
         let directive = """
 
-        # 🎯 FocusIn 專案 Agent 開工核心準則 (FocusIn Agent Directive)
-        > ⚠️ **所有 Agent (OpenCode / OMO / Claude / Cursor) 必讀核心約束：**
-        > 1. **每次開工前，優先從 shared memory 搜尋本 FocusIn 專案相關**：
-        >    - 🏛 **架構約束** (TeacherApp/StudentApp 邊界、Network.framework、零依賴架構)
-        >    - 🍎 **Swift 規範** (Swift 5/6、並發安全、MainActor、記憶體管理)
-        >    - 🎙 **AVAudioEngine 踩坑** (Audio engine reset、format mismatch、buffer overruns)
-        >    - 🚫 **過往失敗方案** (避免重複過去嘗試失敗的做法)
+        # 🎯 \(projectName) 專案 Agent 開工核心準則 (\(projectName) Agent Directive)
+        > ⚠️ **所有 Agent (OpenCode / Claude / Cursor / Windsurf) 必讀核心約束：**
+        > 1. **每次開工前，優先從 AGENT_MEMORY.md 與 shared memory 搜尋本專案相關**：
+        >    - 🏛 **架構約束** (專案結構邊界、技術棧規範、依賴與約定)
+        >    - 🛠 **工作規範** (型別檢查、代碼風格、測試驗證規範)
+        >    - 🚫 **過往失敗方案與踩坑記錄** (避免重複過去嘗試失敗的做法)
         > 2. **每完成一輪重要決策、找到 bug 根因、確認一個架構選擇**：
-        >    - 自動寫入 shared memory / `AGENT_MEMORY.md`，標記來源 Agent（OpenCode / OMO）。
+        >    - 自動寫入專案記憶庫 / `AGENT_MEMORY.md`，標記來源 Agent（OpenCode / Claude / Cursor / Windsurf）。
         > 3. **長期高價值原則**：
         >    - 不要記瑣碎對話，只存長期有用知識。
         """
@@ -969,21 +982,33 @@ public class DaemonClient: ObservableObject {
         > 2. **AFTER completing tasks or making design choices**: Log your actions into the Episodic Action Timeline in `AGENT_MEMORY.md`.
         """
 
-        appendRule(path: "\(targetDir)/CLAUDE.md", rule: directive + "\n" + mandatoryInstruction)
-        appendRule(path: "\(targetDir)/.cursorrules", rule: directive + "\n" + mandatoryInstruction)
-        appendRule(path: "\(targetDir)/.windsurfrules", rule: directive + "\n" + mandatoryInstruction)
+        appendRule(path: "\(targetDir)/CLAUDE.md", rule: directive + "\n" + mandatoryInstruction, signature: "\(projectName) Agent Directive")
+        appendRule(path: "\(targetDir)/.cursorrules", rule: directive + "\n" + mandatoryInstruction, signature: "\(projectName) Agent Directive")
+        appendRule(path: "\(targetDir)/.windsurfrules", rule: directive + "\n" + mandatoryInstruction, signature: "\(projectName) Agent Directive")
+
+        let cursorRulesDir = "\(targetDir)/.cursor/rules"
+        try? FileManager.default.createDirectory(atPath: cursorRulesDir, withIntermediateDirectories: true)
+        let mdc = """
+        ---
+        description: \(projectName) Agent Pre-Task Retrieval & Post-Decision Directive
+        globs: *
+        ---
+
+        \(directive)
+        """
+        try? mdc.write(toFile: "\(cursorRulesDir)/agent-memory.mdc", atomically: true, encoding: .utf8)
 
         let opencodeDir = "\(targetDir)/.opencode/rules"
         try? FileManager.default.createDirectory(atPath: opencodeDir, withIntermediateDirectories: true)
-        try? directive.write(toFile: "\(opencodeDir)/focusin_directive.md", atomically: true, encoding: .utf8)
+        try? directive.write(toFile: "\(opencodeDir)/agent_memory.md", atomically: true, encoding: .utf8)
 
         // Ensure AGENT_MEMORY.md exists
         let memFile = "\(targetDir)/AGENT_MEMORY.md"
         if !FileManager.default.fileExists(atPath: memFile) {
             let initial = """
-            # 🧠 Project Agent Memory: FocusIn
+            # 🧠 Project Agent Memory: \(projectName)
 
-            > **專案名稱 Project**: `FocusIn`
+            > **專案名稱 Project**: `\(projectName)`
             > **最後更新時間 Last Updated**: `\(Date())`
             > **適用 Agents**: OpenCode, Claude Desktop, Claude Code, Cursor, Windsurf
 
@@ -996,45 +1021,50 @@ public class DaemonClient: ObservableObject {
             ## 🕒 1. Episodic Action Timeline (以前的 Agent 做了些什麼)
             <!-- EPISODIC_LOG_START -->
             ### 🔹 [\(ISO8601DateFormatter().string(from: Date()))] @system
-            - **Summary**: Initialized project memory & injected FocusIn directive.
+            - **Summary**: Initialized project memory & injected \(projectName) directive.
             - **Files Touched**: `AGENT_MEMORY.md`, `CLAUDE.md`, `.cursorrules`, `.windsurfrules`
-            - **Key Decisions**: Injected FocusIn architecture constraints and AVAudioEngine anti-gotcha guidelines.
+            - **Key Decisions**: Enabled multi-agent memory tracking across OpenCode, Claude, Cursor, and Windsurf.
 
             ---
 
             ## 🧠 2. Semantic Memory (專案核心事實、架構與約定)
             <!-- SEMANTIC_START -->
-            - **專案目標**: FocusIn iOS/macOS 音訊與同步教學輔助系統
-            - **技術棧 (Tech Stack)**: Swift 5/6, SwiftUI, Network.framework, AVAudioEngine
-            - **核心架構與目錄結構**: TeacherApp / StudentApp 隔離邊界
+            - **專案目標**: \(projectName)
+            - **技術棧 (Tech Stack)**: 
+            - **核心架構與目錄結構**: 
             <!-- SEMANTIC_END -->
 
             ---
 
             ## 🛠 3. Procedural Rules (工作規範與防踩坑指南)
             <!-- PROCEDURAL_START -->
-            - **AVAudioEngine 踩坑**: 避免在主執行緒初始化 engine，需妥善處理 audio format mismatch 與 reset 通知。
-            - **Swift 規範**: 採用嚴格並發安全性 (MainActor 標註 UI 狀態變更)。
+            - **開發規範**: 遵循專案現有的程式碼格式與建置流程。
+            - **測試驗證**: 每次修改後執行相應測試確保無破壞性變更。
             <!-- PROCEDURAL_END -->
 
             ---
 
             ## 🔍 4. Reflective Notes & Known Issues (反思與已知問題)
             <!-- REFLECTIVE_START -->
-            - **已知問題與待辦事項**: 持續排查多連線下音訊緩衝區溢位問題。
+            - **已知問題與待辦事項**: 
             <!-- REFLECTIVE_END -->
             """
             try? initial.write(toFile: memFile, atomically: true, encoding: .utf8)
         }
 
         refreshProjectMemory()
-        addLog("✔ 已將 FocusIn 開工準則與強制閱讀規則注入至: \(targetDir)", isSuccess: true)
-        statusMessage = "已成功注入 FocusIn 專案開工準則！"
+        addLog("✔ 已將 \(projectName) 開工準則與強制閱讀規則注入至: \(targetDir)", isSuccess: true)
+        statusMessage = "已成功注入 \(projectName) 專案開工準則！"
     }
 
-    private func appendRule(path: String, rule: String) {
+    public func injectFocusinPrompt(toPath: String? = nil) {
+        injectProjectDirective(toPath: toPath)
+    }
+
+    private func appendRule(path: String, rule: String, signature: String? = nil) {
+        let sig = signature ?? "Agent Directive"
         if FileManager.default.fileExists(atPath: path) {
-            if let existing = try? String(contentsOfFile: path, encoding: .utf8), !existing.contains("FocusIn Agent Directive") {
+            if let existing = try? String(contentsOfFile: path, encoding: .utf8), !existing.contains(sig) {
                 let updated = existing + "\n" + rule
                 try? updated.write(toFile: path, atomically: true, encoding: .utf8)
             }
@@ -1105,10 +1135,10 @@ public class DaemonClient: ObservableObject {
                 lines.append("```markdown\n\(entry.value)\n```\n")
             }
         }
-        lines.append("\n---\n## 🎯 FocusIn 專案開工核心準則")
+        lines.append("\n---\n## 🎯 跨 Agent 開工核心準則 (Universal Agent Directive)")
         lines.append("""
-        1. 每次開工前，優先從 shared memory 搜尋本 Focusin 專案相關：架構約束、Swift 規範、AVAudioEngine 踩坑、過往失敗方案。
-        2. 每完成一輪重要決策、找到 bug 根因、確認一個架構選擇，自動寫入 shared memory，標記來源 Agent（OpenCode / OMO）。
+        1. 每次開工前，優先查閱專案 AGENT_MEMORY.md 與 shared memory：了解架構約束、專案約定、過往失敗方案與踩坑記錄。
+        2. 每完成一輪重要決策、找到 bug 根因、確認一個架構選擇，自動寫入專案記憶庫（標記來源 Agent）。
         3. 長期高價值原則：不要記瑣碎對話，只存長期有用知識。
         """)
         return lines.joined(separator: "\n")

@@ -10,19 +10,22 @@ export const MANDATORY_AGENT_RULE = `
 > 2. **AFTER completing tasks or making design choices**: Log your actions into the Episodic Action Timeline in \`AGENT_MEMORY.md\`.
 `.trim();
 
-export const FOCUSIN_AGENT_DIRECTIVE = `
-# 🎯 FocusIn 專案 Agent 開工核心準則 (FocusIn Agent Directive)
-> ⚠️ **所有 Agent (OpenCode / OMO / Claude / Cursor) 必讀核心約束：**
-> 1. **每次開工前，優先從 shared memory 搜尋本 FocusIn 專案相關**：
->    - 🏛 **架構約束** (TeacherApp/StudentApp 邊界、Network.framework、零依賴架構)
->    - 🍎 **Swift 規範** (Swift 5/6、並發安全、MainActor、記憶體管理)
->    - 🎙 **AVAudioEngine 踩坑** (Audio engine reset、format mismatch、buffer overruns)
->    - 🚫 **過往失敗方案** (避免重複過去嘗試失敗的做法)
+export function getProjectAgentDirective(projectName: string): string {
+  return `
+# 🎯 ${projectName} 專案 Agent 開工核心準則 (${projectName} Agent Directive)
+> ⚠️ **所有 Agent (OpenCode / Claude / Cursor / Windsurf) 必讀核心約束：**
+> 1. **每次開工前，優先從 AGENT_MEMORY.md 與 shared memory 搜尋本專案相關**：
+>    - 🏛 **架構約束** (專案結構邊界、技術棧規範、依賴與約定)
+>    - 🛠 **工作規範** (型別檢查、代碼風格、測試驗證規範)
+>    - 🚫 **過往失敗方案與踩坑記錄** (避免重複過去嘗試失敗的做法)
 > 2. **每完成一輪重要決策、找到 bug 根因、確認一個架構選擇**：
->    - 自動寫入 shared memory / \`AGENT_MEMORY.md\`，標記來源 Agent（OpenCode / OMO）。
+>    - 自動寫入專案記憶庫 / \`AGENT_MEMORY.md\`，標記來源 Agent（OpenCode / Claude / Cursor / Windsurf）。
 > 3. **長期高價值原則**：
 >    - 不要記瑣碎對話，只存長期有用知識。
 `.trim();
+}
+
+export const FOCUSIN_AGENT_DIRECTIVE = getProjectAgentDirective('FocusIn');
 
 /**
  * ProjectMemoryManager manages in-project Markdown memory (AGENT_MEMORY.md)
@@ -204,32 +207,34 @@ export class ProjectMemoryManager {
   }
 
   /**
-   * Specifically inject the FocusIn Directive into CLAUDE.md, .cursorrules,
+   * Specifically inject the Project Directive into CLAUDE.md, .cursorrules,
    * .windsurfrules, and .opencode/rules/agent_memory.md.
    */
-  injectFocusinDirective(): { injected: string[] } {
+  injectProjectDirective(targetProjectName?: string): { injected: string[] } {
+    const projectName = targetProjectName || path.basename(this.projectPath) || 'Project';
+    const directive = getProjectAgentDirective(projectName);
     const injected: string[] = [];
 
-    const appendFocusinRule = (filePath: string) => {
-      const sig = 'FocusIn 專案 Agent 開工核心準則';
+    const appendProjectRule = (filePath: string) => {
+      const sig = `${projectName} Agent Directive`;
       if (fs.existsSync(filePath)) {
         const existing = fs.readFileSync(filePath, 'utf8');
         if (!existing.includes(sig)) {
-          fs.appendFileSync(filePath, `\n\n${FOCUSIN_AGENT_DIRECTIVE}\n`, 'utf8');
+          fs.appendFileSync(filePath, `\n\n${directive}\n`, 'utf8');
         }
       } else {
-        fs.writeFileSync(filePath, `${FOCUSIN_AGENT_DIRECTIVE}\n`, 'utf8');
+        fs.writeFileSync(filePath, `${directive}\n`, 'utf8');
       }
     };
 
     // CLAUDE.md
     const claudePath = path.join(this.projectPath, 'CLAUDE.md');
-    appendFocusinRule(claudePath);
+    appendProjectRule(claudePath);
     injected.push('CLAUDE.md');
 
     // .cursorrules
     const cursorPath = path.join(this.projectPath, '.cursorrules');
-    appendFocusinRule(cursorPath);
+    appendProjectRule(cursorPath);
     injected.push('.cursorrules');
 
     // .cursor/rules/
@@ -237,17 +242,17 @@ export class ProjectMemoryManager {
     if (!fs.existsSync(cursorRulesDir)) {
       fs.mkdirSync(cursorRulesDir, { recursive: true });
     }
-    const mdcPath = path.join(cursorRulesDir, 'focusin-memory.mdc');
+    const mdcPath = path.join(cursorRulesDir, 'agent-memory.mdc');
     fs.writeFileSync(
       mdcPath,
-      `---\ndescription: FocusIn Agent Pre-Task Retrieval & Post-Decision Directive\nglobs: *\n---\n\n${FOCUSIN_AGENT_DIRECTIVE}\n`,
+      `---\ndescription: ${projectName} Agent Pre-Task Retrieval & Post-Decision Directive\nglobs: *\n---\n\n${directive}\n`,
       'utf8'
     );
-    injected.push('.cursor/rules/focusin-memory.mdc');
+    injected.push('.cursor/rules/agent-memory.mdc');
 
     // .windsurfrules
     const windsurfPath = path.join(this.projectPath, '.windsurfrules');
-    appendFocusinRule(windsurfPath);
+    appendProjectRule(windsurfPath);
     injected.push('.windsurfrules');
 
     // .opencode/rules/
@@ -255,22 +260,26 @@ export class ProjectMemoryManager {
     if (!fs.existsSync(opencodeDir)) {
       fs.mkdirSync(opencodeDir, { recursive: true });
     }
-    fs.writeFileSync(path.join(opencodeDir, 'focusin_directive.md'), `${FOCUSIN_AGENT_DIRECTIVE}\n`, 'utf8');
-    injected.push('.opencode/rules/focusin_directive.md');
+    fs.writeFileSync(path.join(opencodeDir, 'agent_memory.md'), `${directive}\n`, 'utf8');
+    injected.push('.opencode/rules/agent_memory.md');
 
     // If AGENT_MEMORY.md exists, prepend/update it
     if (fs.existsSync(this.memoryFilePath)) {
       let content = fs.readFileSync(this.memoryFilePath, 'utf8');
-      if (!content.includes('FocusIn 專案 Agent 開工核心準則')) {
+      if (!content.includes(`${projectName} Agent Directive`)) {
         content = content.replace(
           '# 🧠 Project Agent Memory:',
-          `${FOCUSIN_AGENT_DIRECTIVE}\n\n---\n\n# 🧠 Project Agent Memory:`
+          `${directive}\n\n---\n\n# 🧠 Project Agent Memory:`
         );
         fs.writeFileSync(this.memoryFilePath, content, 'utf8');
       }
     }
 
     return { injected };
+  }
+
+  injectFocusinDirective(): { injected: string[] } {
+    return this.injectProjectDirective();
   }
 
   private appendRuleToFile(filePath: string, displayName: string): void {

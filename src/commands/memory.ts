@@ -9,7 +9,7 @@ import {
   AgentMemorySession,
 } from '../core/memory.js';
 import { Permission, ConflictStrategy } from '../core/types.js';
-import { ProjectMemoryManager, FOCUSIN_AGENT_DIRECTIVE } from '../core/project_memory.js';
+import { ProjectMemoryManager, FOCUSIN_AGENT_DIRECTIVE, getProjectAgentDirective } from '../core/project_memory.js';
 import { logger } from '../utils/logger.js';
 import pc from 'picocolors';
 
@@ -367,32 +367,43 @@ export function memoryProjectReadCommand(targetDir?: string): void {
   logger.divider();
 }
 
-export function memoryPromptFocusinCommand(options: {
+export function memoryDirectiveCommand(options: {
   inject?: boolean;
   project?: string;
   vault?: string;
 }): void {
-  logger.header('FocusIn 專案 Agent 開工核心準則 (FocusIn Directive)');
-  console.log(pc.cyan(FOCUSIN_AGENT_DIRECTIVE));
+  const targetDir = options.project || process.cwd();
+  const projectName = path.basename(path.resolve(targetDir));
+  const directive = getProjectAgentDirective(projectName);
+
+  logger.header(`${projectName} 專案 Agent 開工核心準則 (${projectName} Directive)`);
+  console.log(pc.cyan(directive));
   logger.divider();
 
   const { vault, pool, blackboard } = getMemoryContext(options.vault);
 
-  // Write to shared memory pool under research/focusin_guidelines
+  // Write to shared memory pool under research/project_directive
   try {
-    pool.write('system', 'research', 'focusin_guidelines', FOCUSIN_AGENT_DIRECTIVE);
+    pool.write('system', 'research', `${projectName.toLowerCase()}_directive`, directive);
     vault.writeSharedMemory(pool.exportData());
     vault.writeBlackboard(blackboard.getState());
-    logger.success('Saved FocusIn directive into Shared Memory pool: [research/focusin_guidelines]');
+    logger.success(`Saved ${projectName} directive into Shared Memory pool: [research/${projectName.toLowerCase()}_directive]`);
   } catch {
     // ignore
   }
 
   if (options.inject) {
-    const targetDir = options.project || process.cwd();
     const mgr = new ProjectMemoryManager(targetDir);
-    const res = mgr.injectFocusinDirective();
-    logger.success(`Injected FocusIn Directive into ${res.injected.length} rule files in: ${pc.bold(pc.cyan(targetDir))}`);
+    const res = mgr.injectProjectDirective(projectName);
+    logger.success(`Injected ${projectName} Directive into ${res.injected.length} rule files in: ${pc.bold(pc.cyan(targetDir))}`);
     console.log(pc.dim(`Files updated: ${res.injected.join(', ')}`));
   }
+}
+
+export function memoryPromptFocusinCommand(options: {
+  inject?: boolean;
+  project?: string;
+  vault?: string;
+}): void {
+  memoryDirectiveCommand(options);
 }

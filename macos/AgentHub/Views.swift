@@ -220,9 +220,9 @@ public struct OverviewView: View {
                     .buttonStyle(.bordered)
 
                     Button(action: {
-                        client.injectFocusinPrompt()
+                        client.injectProjectDirective()
                     }) {
-                        Label(L10n.tr(.btnInjectFocusin), systemImage: "target")
+                        Label(L10n.tr(.btnInjectProjectDirective), systemImage: "arrow.down.doc")
                     }
                     .buttonStyle(.bordered)
 
@@ -1106,7 +1106,7 @@ struct ProjectRuleAuditBar: View {
 
             if !client.currentProjectAudit.allCompliant {
                 Button(action: {
-                    client.injectFocusinPrompt()
+                    client.injectProjectDirective()
                 }) {
                     Text(L10n.tr(.btnFixAllRules))
                         .font(.caption.bold())
@@ -1354,35 +1354,36 @@ public struct ProjectMemoryView: View {
                 // 3. Project Rule Compliance Audit Bar
                 ProjectRuleAuditBar()
 
-                // 4. FocusIn Core Directive Banner
+                // 4. Project Core Directive Card
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
                         Image(systemName: "target")
-                            .foregroundColor(.red)
+                            .foregroundColor(.blue)
                             .font(.headline)
-                        Text(L10n.tr(.focusinDirectiveTitle))
+                        Text(L10n.tr(.projectDirectiveTitle(client.currentProjectName)))
                             .font(.headline)
                         Spacer()
                         Button(action: {
-                            client.copyToClipboard(client.focusinDirectiveText, toast: L10n.tr(.toastCopied))
+                            client.copyToClipboard(client.currentProjectDirectiveText, toast: L10n.tr(.toastCopied))
                         }) {
-                            Label(L10n.tr(.btnCopyFocusinPrompt), systemImage: "doc.on.doc")
+                            Label(L10n.tr(.btnCopyProjectDirective), systemImage: "doc.on.doc")
                         }
                         .buttonStyle(.bordered)
 
-                        Button(L10n.tr(.btnInjectFocusinToProject)) {
-                            client.injectFocusinPrompt()
-                            statusToast = "✔ " + L10n.tr(.btnInjectFocusinToProject)
+                        Button(L10n.tr(.btnInjectDirectiveToProject)) {
+                            client.injectProjectDirective()
+                            statusToast = "✔ " + L10n.tr(.btnInjectDirectiveToProject)
                         }
                         .buttonStyle(.borderedProminent)
-                        .tint(.red)
+                        .tint(.blue)
                     }
 
-                    Text(L10n.tr(.focusinDirectiveBody))
+                    Text(L10n.tr(.projectDirectiveBody(client.currentProjectName)))
                         .font(.subheadline)
                         .foregroundColor(.primary)
                         .padding(10)
-                        .background(Color.red.opacity(0.08))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.blue.opacity(0.06))
                         .cornerRadius(8)
                 }
                 .padding()
@@ -1390,7 +1391,7 @@ public struct ProjectMemoryView: View {
                 .cornerRadius(12)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.red.opacity(0.3), lineWidth: 1)
+                        .stroke(Color.blue.opacity(0.2), lineWidth: 1)
                 )
 
                 // 5. OpenMemory Cognitive Sector Picker Tabs
