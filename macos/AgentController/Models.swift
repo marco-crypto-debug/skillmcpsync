@@ -259,3 +259,35 @@ public struct DashboardOverview: Codable {
     public var activeAgentsCount: Int
     public var lastSyncTime: Date?
 }
+
+public struct McpPresetItem: Identifiable, Hashable {
+    public var id: String { name }
+    public let name: String
+    public let title: String
+    public let category: String
+    public let description: String
+    public let icon: String
+    public let command: String
+    public let args: [String]
+    public let env: [String: String]
+
+    public init(
+        name: String,
+        title: String,
+        category: String,
+        description: String,
+        icon: String,
+        command: String,
+        args: [String],
+        env: [String: String] = [:]
+    ) {
+        self.name = name
+        self.title = title
+        self.category = category
+        self.description = description
+        self.icon = icon
+        self.command = command
+        self.args = args
+        self.env = env
+    }
+}

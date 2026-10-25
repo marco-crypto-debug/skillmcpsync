@@ -154,6 +154,29 @@ public struct L10n {
         case btnCancel
         case btnCreate
 
+        // New MCP Modal & UI Enhancements
+        case btnAddMcpServer
+        case addMcpModalTitle
+        case tabMcpPresets
+        case tabMcpCustom
+        case btnAddThisPreset
+        case lblServerName
+        case lblCommand
+        case lblArgs
+        case lblEnvVars
+        case btnCopyConfigJson
+        case btnDeleteMcp
+        case btnToggleMcp
+        case btnOpenAgentConfig
+        case btnOpenProjectTerminal
+        case btnOpenProjectFinder
+        case searchSkillsPlaceholder
+        case filterAllSources
+        case btnCopySkillTag
+        case btnDeleteSkill
+        case btnCopyFocusinPrompt
+        case toastCopied
+
         // Shared Memory View
         case sharedMemoryTitle
         case sharedMemorySubtitle
@@ -687,6 +710,134 @@ public struct L10n {
                 case .traditionalChinese: return "建立"
                 case .simplifiedChinese: return "创建"
                 case .english: return "Create"
+                }
+
+            // New MCP Modal & UI Enhancements
+            case .btnAddMcpServer:
+                switch lang {
+                case .traditionalChinese: return "➕ 新增 MCP 伺服器"
+                case .simplifiedChinese: return "➕ 新增 MCP 服务器"
+                case .english: return "➕ Add MCP Server"
+                }
+            case .addMcpModalTitle:
+                switch lang {
+                case .traditionalChinese: return "新增 MCP 伺服器至 AgentHub"
+                case .simplifiedChinese: return "新增 MCP 服务器至 AgentHub"
+                case .english: return "Add MCP Server to AgentHub"
+                }
+            case .tabMcpPresets:
+                switch lang {
+                case .traditionalChinese: return "精選熱門預設"
+                case .simplifiedChinese: return "精选热门预设"
+                case .english: return "Curated Presets"
+                }
+            case .tabMcpCustom:
+                switch lang {
+                case .traditionalChinese: return "自訂配置"
+                case .simplifiedChinese: return "自定义配置"
+                case .english: return "Custom Config"
+                }
+            case .btnAddThisPreset:
+                switch lang {
+                case .traditionalChinese: return "加入此 MCP"
+                case .simplifiedChinese: return "加入此 MCP"
+                case .english: return "Add This MCP"
+                }
+            case .lblServerName:
+                switch lang {
+                case .traditionalChinese: return "伺服器識別名稱 (ID / Name)"
+                case .simplifiedChinese: return "服务器识别名称 (ID / Name)"
+                case .english: return "Server ID / Name"
+                }
+            case .lblCommand:
+                switch lang {
+                case .traditionalChinese: return "啟動指令 (Command，如 npx / node / python3)"
+                case .simplifiedChinese: return "启动指令 (Command，如 npx / node / python3)"
+                case .english: return "Command (e.g. npx / node / python3)"
+                }
+            case .lblArgs:
+                switch lang {
+                case .traditionalChinese: return "參數列表 (每行一個參數或空格分隔)"
+                case .simplifiedChinese: return "参数列表 (每行一个参数或空格分隔)"
+                case .english: return "Arguments (one per line or space-separated)"
+                }
+            case .lblEnvVars:
+                switch lang {
+                case .traditionalChinese: return "環境變數 (KEY=VALUE，可選)"
+                case .simplifiedChinese: return "环境变量 (KEY=VALUE，可选)"
+                case .english: return "Environment Variables (KEY=VALUE, optional)"
+                }
+            case .btnCopyConfigJson:
+                switch lang {
+                case .traditionalChinese: return "複製配置 JSON"
+                case .simplifiedChinese: return "复制配置 JSON"
+                case .english: return "Copy JSON"
+                }
+            case .btnDeleteMcp:
+                switch lang {
+                case .traditionalChinese: return "刪除此 MCP"
+                case .simplifiedChinese: return "删除此 MCP"
+                case .english: return "Delete MCP"
+                }
+            case .btnToggleMcp:
+                switch lang {
+                case .traditionalChinese: return "開關切換"
+                case .simplifiedChinese: return "开关切换"
+                case .english: return "Toggle"
+                }
+            case .btnOpenAgentConfig:
+                switch lang {
+                case .traditionalChinese: return "打開設定目錄"
+                case .simplifiedChinese: return "打开配置目录"
+                case .english: return "Open Config Dir"
+                }
+            case .btnOpenProjectTerminal:
+                switch lang {
+                case .traditionalChinese: return "在終端機中開啟"
+                case .simplifiedChinese: return "在终端中打开"
+                case .english: return "Open in Terminal"
+                }
+            case .btnOpenProjectFinder:
+                switch lang {
+                case .traditionalChinese: return "在 Finder 中開啟專案"
+                case .simplifiedChinese: return "在 Finder 中打开项目"
+                case .english: return "Open in Finder"
+                }
+            case .searchSkillsPlaceholder:
+                switch lang {
+                case .traditionalChinese: return "搜尋 Skill 名稱或功能說明..."
+                case .simplifiedChinese: return "搜索 Skill 名称或功能说明..."
+                case .english: return "Search Skills or instructions..."
+                }
+            case .filterAllSources:
+                switch lang {
+                case .traditionalChinese: return "全部來源"
+                case .simplifiedChinese: return "全部来源"
+                case .english: return "All Sources"
+                }
+            case .btnCopySkillTag:
+                switch lang {
+                case .traditionalChinese: return "複製 Skill 引用"
+                case .simplifiedChinese: return "复制 Skill 引用"
+                case .english: return "Copy Tag"
+                }
+            case .btnDeleteSkill:
+                switch lang {
+                case .traditionalChinese: return "刪除 Skill"
+                case .simplifiedChinese: return "删除 Skill"
+                case .english: return "Delete"
+                }
+            case .btnCopyFocusinPrompt:
+                switch lang {
+                case .traditionalChinese: return "複製開工規範提示詞"
+                case .simplifiedChinese: return "复制开工规范提示词"
+                case .english: return "Copy Directive Prompt"
+                }
+            case .toastCopied:
+                switch lang {
+                case .traditionalChinese: return "✔ 已複製至剪貼簿"
+                case .simplifiedChinese: return "✔ 已复制至剪贴板"
+                case .english: return "✔ Copied to Clipboard"
                 }
 
             // Shared Memory View

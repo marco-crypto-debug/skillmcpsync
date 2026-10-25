@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import AppKit
+import SwiftUI
 
 @MainActor
 public class DaemonClient: ObservableObject {
@@ -19,6 +20,75 @@ public class DaemonClient: ObservableObject {
     @Published public var blackboardSolution: String = ""
     @Published public var scratchpadNotes: [String: [String]] = [:]
     @Published public var syncLogs: [SyncLogItem] = []
+    @Published public var toastMessage: String? = nil
+    private var toastWorkItem: DispatchWorkItem?
+
+    // Curated Presets
+    public let mcpPresets: [McpPresetItem] = [
+        McpPresetItem(
+            name: "fetch",
+            title: "Fetch HTTP / Web API",
+            category: "Network",
+            description: "讀取網頁 HTML 與轉換 Markdown，支援各類 RESTful API 呼叫",
+            icon: "network",
+            command: "npx",
+            args: ["-y", "@modelcontextprotocol/server-fetch"]
+        ),
+        McpPresetItem(
+            name: "filesystem",
+            title: "Filesystem Local Access",
+            category: "Files",
+            description: "安全存取與檢索指定本機目錄，支援目錄瀏覽與檔案讀寫",
+            icon: "folder",
+            command: "npx",
+            args: ["-y", "@modelcontextprotocol/server-filesystem", "/Users/marco/Documents"]
+        ),
+        McpPresetItem(
+            name: "brave-search",
+            title: "Brave Search Web Engine",
+            category: "Search",
+            description: "即時聯網搜尋引擎，取得最新技術文件、StackOverflow 與即時資料",
+            icon: "magnifyingglass",
+            command: "npx",
+            args: ["-y", "@modelcontextprotocol/server-brave-search"]
+        ),
+        McpPresetItem(
+            name: "memory",
+            title: "Memory Knowledge Graph",
+            category: "Memory",
+            description: "以知識圖譜實體 (Entity) 與關係 (Relation) 持久化長期記憶",
+            icon: "brain",
+            command: "npx",
+            args: ["-y", "@modelcontextprotocol/server-memory"]
+        ),
+        McpPresetItem(
+            name: "sqlite",
+            title: "SQLite Database Explorer",
+            category: "Database",
+            description: "分析本地 SQLite 資料庫 Schema、執行 SQL 查詢與資料檢視",
+            icon: "cylinder.split.1x2",
+            command: "npx",
+            args: ["-y", "@modelcontextprotocol/server-sqlite", "--db-path", "~/AgentHub/database.sqlite"]
+        ),
+        McpPresetItem(
+            name: "puppeteer",
+            title: "Puppeteer Browser Automation",
+            category: "Automation",
+            description: "Headless Chrome 瀏覽器自動化，截圖與動態網頁渲染",
+            icon: "safari",
+            command: "npx",
+            args: ["-y", "@modelcontextprotocol/server-puppeteer"]
+        ),
+        McpPresetItem(
+            name: "github",
+            title: "GitHub Repos & Issues",
+            category: "Developer",
+            description: "檢索 GitHub Repositories、Pull Requests、Issues 與檔案內容",
+            icon: "chevron.left.forwardslash.chevron.right",
+            command: "npx",
+            args: ["-y", "@modelcontextprotocol/server-github"]
+        )
+    ]
 
     // Project Memory & Recents
     @Published public var currentProjectPath: String = "/Users/marco/Documents/FocusIn"
@@ -858,6 +928,21 @@ public class DaemonClient: ObservableObject {
 
     // MARK: - Memory & FocusIn Directives
 
+    public var focusinDirectiveText: String {
+        return """
+        # 🎯 FocusIn 專案 Agent 開工核心準則 (FocusIn Agent Directive)
+        > ⚠️ 所有 Agent (OpenCode / OMO / Claude / Cursor) 必讀核心約束：
+        > 1. 每次開工前，優先從 shared memory 搜尋本 FocusIn 專案相關：
+        >    - 🏛 架構約束 (TeacherApp/StudentApp 邊界、Network.framework、零依賴架構)
+        >    - 🍎 Swift 規範 (Swift 5/6、並發安全、MainActor、記憶體管理)
+        >    - 🎙 AVAudioEngine 踩坑 (Audio engine reset、format mismatch、buffer overruns)
+        >    - 🚫 過往失敗方案 (避免重複過去嘗試失敗的做法)
+        > 2. 每完成一輪重要決策、找到 bug 根因、確認一個架構選擇：
+        >    - 自動寫入 shared memory / AGENT_MEMORY.md，標記來源 Agent（OpenCode / OMO）。
+        > 3. 長期高價值原則：不要記瑣碎對話，只存長期有用知識。
+        """
+    }
+
     public func injectFocusinPrompt(toPath: String? = nil) {
         let targetDir = toPath ?? currentProjectPath
         let directive = """
@@ -1105,11 +1190,231 @@ public class DaemonClient: ObservableObject {
             """
             try content.write(toFile: skillFile, atomically: true, encoding: .utf8)
             addLog("✔ 已成功在 AgentHub 建立新 Skill: \(sanitizedName)", isSuccess: true)
+            showToast("✔ 已建立 Skill: \(sanitizedName)")
             refreshRealSystemState()
             return true
         } catch {
             addLog("建立 Skill 失敗: \(error.localizedDescription)", isError: true)
+            showToast("建立失敗: \(error.localizedDescription)")
             return false
+        }
+    }
+
+    public func deleteSkill(name: String) -> Bool {
+        let skillFolder = "\(agentHubPath)/skills/\(name)"
+        if FileManager.default.fileExists(atPath: skillFolder) {
+            do {
+                try FileManager.default.removeItem(atPath: skillFolder)
+                showToast("✔ 已刪除 Skill: \(name)")
+                addLog("✔ 已刪除 Skill 模組：\(name)", isSuccess: true)
+                refreshRealSystemState()
+                return true
+            } catch {
+                showToast("刪除失敗: \(error.localizedDescription)")
+                addLog("刪除失敗: \(error.localizedDescription)", isError: true)
+                return false
+            }
+        }
+        return false
+    }
+
+    public func openSkillInFinder(name: String) {
+        let skillFolder = "\(agentHubPath)/skills/\(name)"
+        if FileManager.default.fileExists(atPath: skillFolder) {
+            NSWorkspace.shared.open(URL(fileURLWithPath: skillFolder))
+        } else {
+            openSkillsInFinder()
+        }
+    }
+
+    // MARK: - Toast & Clipboard
+
+    public func showToast(_ message: String) {
+        toastWorkItem?.cancel()
+        toastMessage = message
+        let item = DispatchWorkItem { [weak self] in
+            withAnimation(.easeOut(duration: 0.3)) {
+                self?.toastMessage = nil
+            }
+        }
+        toastWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5, execute: item)
+    }
+
+    public func copyToClipboard(_ text: String, toast: String? = nil) {
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(text, forType: .string)
+        if let toast = toast {
+            showToast(toast)
+        }
+    }
+
+    // MARK: - MCP Server Operations
+
+    public func addMcpServer(name: String, type: String = "stdio", command: String, args: [String], env: [String: String] = [:]) -> Bool {
+        let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanName.isEmpty else { return false }
+        let hubMcpFile = "\(agentHubPath)/mcps/mcp-servers.json"
+        let rootMcpFile = "\(agentHubPath)/mcp-servers.json"
+
+        var current: [String: Any] = [:]
+        if FileManager.default.fileExists(atPath: hubMcpFile),
+           let data = try? Data(contentsOf: URL(fileURLWithPath: hubMcpFile)),
+           let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] {
+            current = json
+        } else if FileManager.default.fileExists(atPath: rootMcpFile),
+                  let data = try? Data(contentsOf: URL(fileURLWithPath: rootMcpFile)),
+                  let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] {
+            current = json
+        }
+
+        var serverObj: [String: Any] = [
+            "type": type,
+            "command": command,
+            "args": args,
+            "enabled": true
+        ]
+        if !env.isEmpty {
+            serverObj["env"] = env
+        }
+        current[cleanName] = serverObj
+
+        do {
+            let data = try JSONSerialization.data(withJSONObject: current, options: [.prettyPrinted, .sortedKeys])
+            let hubDir = "\(agentHubPath)/mcps"
+            try FileManager.default.createDirectory(atPath: hubDir, withIntermediateDirectories: true)
+            try data.write(to: URL(fileURLWithPath: hubMcpFile), options: .atomic)
+            try data.write(to: URL(fileURLWithPath: rootMcpFile), options: .atomic)
+
+            showToast("✔ 已新增 MCP: \(cleanName)")
+            addLog("✔ 已在 AgentHub 新增 MCP 伺服器：\(cleanName)", isSuccess: true)
+            refreshRealSystemState()
+            return true
+        } catch {
+            showToast("新增失敗: \(error.localizedDescription)")
+            addLog("新增 MCP 失敗：\(error.localizedDescription)", isError: true)
+            return false
+        }
+    }
+
+    public func removeMcpServer(name: String) -> Bool {
+        let hubMcpFile = "\(agentHubPath)/mcps/mcp-servers.json"
+        let rootMcpFile = "\(agentHubPath)/mcp-servers.json"
+        var changed = false
+
+        for filePath in [hubMcpFile, rootMcpFile] {
+            if FileManager.default.fileExists(atPath: filePath),
+               let data = try? Data(contentsOf: URL(fileURLWithPath: filePath)),
+               var json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] {
+                if json.removeValue(forKey: name) != nil {
+                    if let updatedData = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
+                        try? updatedData.write(to: URL(fileURLWithPath: filePath), options: .atomic)
+                        changed = true
+                    }
+                }
+            }
+        }
+
+        if changed {
+            showToast("✔ 已移除 MCP: \(name)")
+            addLog("✔ 已自 AgentHub 移除 MCP 伺服器：\(name)", isSuccess: true)
+            refreshRealSystemState()
+            return true
+        } else {
+            showToast("移除失敗：找不到或無法編輯")
+            return false
+        }
+    }
+
+    public func toggleMcpServer(name: String) -> Bool {
+        let hubMcpFile = "\(agentHubPath)/mcps/mcp-servers.json"
+        let rootMcpFile = "\(agentHubPath)/mcp-servers.json"
+        var newStatus = true
+        var changed = false
+
+        for filePath in [hubMcpFile, rootMcpFile] {
+            if FileManager.default.fileExists(atPath: filePath),
+               let data = try? Data(contentsOf: URL(fileURLWithPath: filePath)),
+               var json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+               var srv = json[name] as? [String: Any] {
+                let currentEnabled = (srv["enabled"] as? Bool) ?? true
+                newStatus = !currentEnabled
+                srv["enabled"] = newStatus
+                json[name] = srv
+                if let updatedData = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
+                    try? updatedData.write(to: URL(fileURLWithPath: filePath), options: .atomic)
+                    changed = true
+                }
+            }
+        }
+
+        if changed {
+            let statusStr = newStatus ? "已啟用" : "已停用"
+            showToast("✔ \(name) \(statusStr)")
+            addLog("✔ MCP 伺服器 \(name) \(statusStr)")
+            refreshRealSystemState()
+            return true
+        }
+        return false
+    }
+
+    public func copyMcpJson(name: String) {
+        if let srv = servers.first(where: { $0.name == name }) {
+            let dict: [String: Any] = [
+                "type": srv.type ?? "stdio",
+                "command": srv.command ?? "",
+                "args": srv.args ?? []
+            ]
+            if let data = try? JSONSerialization.data(withJSONObject: [name: dict], options: [.prettyPrinted, .sortedKeys]),
+               let str = String(data: data, encoding: .utf8) {
+                copyToClipboard(str, toast: "✔ 已複製 \(name) 配置 JSON")
+                return
+            }
+        }
+        showToast("找不到伺服器配置")
+    }
+
+    // MARK: - External Launchers
+
+    public func openProjectInFinder(path: String? = nil) {
+        let p = path ?? currentProjectPath
+        NSWorkspace.shared.open(URL(fileURLWithPath: p))
+    }
+
+    public func openProjectInTerminal(path: String? = nil) {
+        let p = path ?? currentProjectPath
+        let script = "tell application \"Terminal\" to do script \"cd \\\"\(p)\\\"\""
+        if let appleScript = NSAppleScript(source: script) {
+            var error: NSDictionary?
+            appleScript.executeAndReturnError(&error)
+            if error == nil {
+                showToast("✔ 已在終端機中開啟專案")
+            }
+        }
+    }
+
+    public func openAgentConfigInFinder(agentId: String) {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let targetPath: String
+        switch agentId.lowercased() {
+        case "opencode":
+            targetPath = "\(home)/.config/opencode"
+        case "antigravity":
+            targetPath = "\(home)/.gemini/antigravity"
+        case "claude":
+            targetPath = "\(home)/Library/Application Support/Claude"
+        case "cursor":
+            targetPath = "\(home)/.cursor"
+        case "windsurf":
+            targetPath = "\(home)/.codeium/windsurf"
+        default:
+            targetPath = agentHubPath
+        }
+        if FileManager.default.fileExists(atPath: targetPath) {
+            NSWorkspace.shared.open(URL(fileURLWithPath: targetPath))
+        } else {
+            showToast("目錄尚未建立或未安裝：\(agentId)")
         }
     }
 }

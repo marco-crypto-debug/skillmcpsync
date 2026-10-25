@@ -25,6 +25,28 @@ struct AgentControllerApp: App {
                 }
             }
             .frame(minWidth: 860, minHeight: 580)
+            .overlay(alignment: .bottomTrailing) {
+                if let toast = DaemonClient.shared.toastMessage {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                        Text(toast)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.primary)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(20)
+                    .shadow(color: Color.black.opacity(0.18), radius: 8, x: 0, y: 4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                    )
+                    .padding(24)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
         }
         .commands {
             CommandGroup(replacing: .newItem) {

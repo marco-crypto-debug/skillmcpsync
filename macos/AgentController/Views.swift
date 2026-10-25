@@ -299,11 +299,25 @@ struct AgentCardView: View {
                 }
             }
 
-            Text(agent.configPath)
-                .font(.system(size: 10, design: .monospaced))
-                .foregroundColor(.secondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
+            HStack {
+                Text(agent.configPath)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer()
+                if agent.isInstalled {
+                    Button(action: {
+                        DaemonClient.shared.openAgentConfigInFinder(agentId: agent.id)
+                    }) {
+                        Image(systemName: "folder")
+                            .font(.system(size: 11))
+                            .foregroundColor(.blue)
+                    }
+                    .buttonStyle(.plain)
+                    .help(L10n.tr(.btnOpenAgentConfig))
+                }
+            }
         }
         .padding(12)
         .background(Color(NSColor.controlBackgroundColor))
@@ -342,11 +356,175 @@ struct MetricCard: View {
     }
 }
 
+// MARK: - Add MCP Modal View
+struct AddMcpModalView: View {
+    @ObservedObject var client = DaemonClient.shared
+    @Binding var isPresented: Bool
+    @State private var selectedTab: Int = 0 // 0: Presets, 1: Custom
+
+    // Custom form state
+    @State private var customName: String = ""
+    @State private var customType: String = "stdio"
+    @State private var customCommand: String = "npx"
+    @State private var customArgs: String = ""
+    @State private var customEnv: String = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text(L10n.tr(.addMcpModalTitle))
+                    .font(.title3.bold())
+                Spacer()
+                Button(action: { isPresented = false }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+
+            Picker("", selection: $selectedTab) {
+                Text(L10n.tr(.tabMcpPresets)).tag(0)
+                Text(L10n.tr(.tabMcpCustom)).tag(1)
+            }
+            .pickerStyle(.segmented)
+
+            if selectedTab == 0 {
+                // Curated Presets List
+                ScrollView {
+                    VStack(spacing: 10) {
+                        ForEach(client.mcpPresets) { preset in
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: preset.icon)
+                                    .font(.title2)
+                                    .foregroundColor(.blue)
+                                    .frame(width: 32, height: 32)
+                                    .background(Color.blue.opacity(0.12))
+                                    .cornerRadius(8)
+
+                                VStack(alignment: .leading, spacing: 3) {
+                                    HStack {
+                                        Text(preset.title)
+                                            .font(.headline)
+                                        Text(preset.category)
+                                            .font(.caption2.bold())
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(Color.purple.opacity(0.12))
+                                            .foregroundColor(.purple)
+                                            .cornerRadius(4)
+                                    }
+                                    Text(preset.description)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Text("`\(preset.command) \(preset.args.joined(separator: " "))`")
+                                        .font(.system(size: 10, design: .monospaced))
+                                        .foregroundColor(.secondary)
+                                }
+
+                                Spacer()
+
+                                Button(action: {
+                                    if client.addMcpServer(name: preset.name, type: "stdio", command: preset.command, args: preset.args, env: preset.env) {
+                                        isPresented = false
+                                    }
+                                }) {
+                                    Label(L10n.tr(.btnAddThisPreset), systemImage: "plus")
+                                        .font(.caption.bold())
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .tint(.blue)
+                            }
+                            .padding(12)
+                            .background(Color(NSColor.controlBackgroundColor))
+                            .cornerRadius(10)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
+                            )
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+                .frame(maxHeight: 380)
+            } else {
+                // Custom Config Form
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(L10n.tr(.lblServerName))
+                            .font(.caption.bold())
+                            .foregroundColor(.secondary)
+                        TextField("my-custom-mcp", text: $customName)
+                            .textFieldStyle(.roundedBorder)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(L10n.tr(.lblCommand))
+                            .font(.caption.bold())
+                            .foregroundColor(.secondary)
+                        TextField("npx", text: $customCommand)
+                            .textFieldStyle(.roundedBorder)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(L10n.tr(.lblArgs))
+                            .font(.caption.bold())
+                            .foregroundColor(.secondary)
+                        TextField("-y my-mcp-package --flag", text: $customArgs)
+                            .textFieldStyle(.roundedBorder)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(L10n.tr(.lblEnvVars))
+                            .font(.caption.bold())
+                            .foregroundColor(.secondary)
+                        TextField("API_KEY=xyz,DEBUG=true", text: $customEnv)
+                            .textFieldStyle(.roundedBorder)
+                    }
+
+                    Spacer()
+
+                    HStack {
+                        Spacer()
+                        Button(L10n.tr(.btnCancel)) {
+                            isPresented = false
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button(L10n.tr(.btnCreate)) {
+                            let cleanArgs = customArgs.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+                            var envDict: [String: String] = [:]
+                            if !customEnv.isEmpty {
+                                for item in customEnv.components(separatedBy: ",") {
+                                    let parts = item.components(separatedBy: "=")
+                                    if parts.count >= 2 {
+                                        envDict[parts[0].trimmingCharacters(in: .whitespaces)] = parts.dropFirst().joined(separator: "=").trimmingCharacters(in: .whitespaces)
+                                    }
+                                }
+                            }
+                            if client.addMcpServer(name: customName, type: customType, command: customCommand, args: cleanArgs, env: envDict) {
+                                isPresented = false
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(customName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
+                .padding(.top, 4)
+                .frame(minHeight: 320)
+            }
+        }
+        .padding(20)
+        .frame(width: 580, height: 480)
+    }
+}
+
 // MARK: - Servers View
 public struct ServersView: View {
     @ObservedObject var client = DaemonClient.shared
     @ObservedObject var langManager = LanguageManager.shared
     @State private var searchText: String = ""
+    @State private var showingAddMcpSheet: Bool = false
 
     var filteredServers: [MCPServerItem] {
         if searchText.isEmpty { return client.servers }
@@ -366,13 +544,22 @@ public struct ServersView: View {
                 Spacer()
                 TextField(L10n.tr(.searchServersPlaceholder), text: $searchText)
                     .textFieldStyle(.roundedBorder)
-                    .frame(width: 200)
+                    .frame(width: 180)
+
+                Button(action: {
+                    showingAddMcpSheet = true
+                }) {
+                    Label(L10n.tr(.btnAddMcpServer), systemImage: "plus")
+                }
+                .buttonStyle(.borderedProminent)
+
                 Button(action: {
                     client.openMcpsInFinder()
                 }) {
                     Label(L10n.tr(.btnOpenMcpsInFinder), systemImage: "folder")
                 }
                 .buttonStyle(.bordered)
+
                 Button(L10n.tr(.btnRefresh)) {
                     client.refreshRealSystemState()
                 }
@@ -407,6 +594,27 @@ public struct ServersView: View {
                         }
 
                         Spacer()
+
+                        Button(action: {
+                            client.copyMcpJson(name: srv.name)
+                        }) {
+                            Image(systemName: "doc.on.doc")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.plain)
+                        .help(L10n.tr(.btnCopyConfigJson))
+
+                        if srv.sourceAgents.contains("AgentHub") || srv.sourceAgents.contains("Vault") {
+                            Button(action: {
+                                _ = client.removeMcpServer(name: srv.name)
+                            }) {
+                                Image(systemName: "trash")
+                                    .font(.caption)
+                                    .foregroundColor(.red.opacity(0.8))
+                            }
+                            .buttonStyle(.plain)
+                            .help(L10n.tr(.btnDeleteMcp))
+                        }
                     }
 
                     if let cmd = srv.command {
@@ -433,6 +641,9 @@ public struct ServersView: View {
             }
             .listStyle(.inset)
         }
+        .sheet(isPresented: $showingAddMcpSheet) {
+            AddMcpModalView(isPresented: $showingAddMcpSheet)
+        }
     }
 }
 
@@ -445,9 +656,27 @@ public struct SkillsToolsView: View {
     @State private var showingNewSkillSheet: Bool = false
     @State private var newSkillName: String = ""
     @State private var newSkillDesc: String = ""
+    @State private var searchSkillText: String = ""
+    @State private var selectedOriginFilter: String = "ALL"
+
+    var filteredSkills: [SkillItem] {
+        client.skills.filter { sk in
+            let matchOrigin = (selectedOriginFilter == "ALL") || sk.originServer.lowercased().contains(selectedOriginFilter.lowercased())
+            if !matchOrigin { return false }
+            if searchSkillText.isEmpty { return true }
+            let q = searchSkillText.lowercased()
+            return sk.name.lowercased().contains(q) || (sk.description?.lowercased().contains(q) ?? false)
+        }
+    }
+
+    var filteredTools: [ToolItem] {
+        if searchSkillText.isEmpty { return client.tools }
+        let q = searchSkillText.lowercased()
+        return client.tools.filter { $0.namespacedName.lowercased().contains(q) || ($0.description?.lowercased().contains(q) ?? false) }
+    }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(L10n.tr(.skillsTitle))
@@ -483,11 +712,37 @@ public struct SkillsToolsView: View {
             }
             .padding([.top, .horizontal])
 
+            // Search & Filter Bar
+            HStack(spacing: 10) {
+                TextField(L10n.tr(.searchSkillsPlaceholder), text: $searchSkillText)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(maxWidth: 280)
+
+                if selectedTab == 0 {
+                    HStack(spacing: 6) {
+                        FilterPill(label: L10n.tr(.filterAllSources), isSelected: selectedOriginFilter == "ALL") {
+                            selectedOriginFilter = "ALL"
+                        }
+                        FilterPill(label: "AgentHub", isSelected: selectedOriginFilter == "AgentHub") {
+                            selectedOriginFilter = "AgentHub"
+                        }
+                        FilterPill(label: "OpenCode", isSelected: selectedOriginFilter == "OpenCode") {
+                            selectedOriginFilter = "OpenCode"
+                        }
+                        FilterPill(label: "Antigravity", isSelected: selectedOriginFilter == "Antigravity") {
+                            selectedOriginFilter = "Antigravity"
+                        }
+                    }
+                }
+                Spacer()
+            }
+            .padding(.horizontal)
+
             if selectedTab == 0 {
-                List(client.skills) { skill in
+                List(filteredSkills) { skill in
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            HStack {
+                            HStack(spacing: 6) {
                                 Text(skill.name)
                                     .font(.headline)
                                 Text(skill.originServer)
@@ -505,19 +760,52 @@ public struct SkillsToolsView: View {
                             }
                         }
                         Spacer()
-                        if !skill.content.isEmpty {
-                            Button(L10n.tr(.btnViewSkillMd)) {
-                                selectedSkill = skill
+
+                        HStack(spacing: 8) {
+                            Button(action: {
+                                client.openSkillInFinder(name: skill.name)
+                            }) {
+                                Image(systemName: "folder")
+                                    .font(.caption)
                             }
-                            .buttonStyle(.bordered)
-                            .font(.caption)
+                            .buttonStyle(.plain)
+                            .help("在 Finder 中打開此 Skill")
+
+                            Button(action: {
+                                client.copyToClipboard("@skill \(skill.name)", toast: "✔ 已複製 @skill \(skill.name)")
+                            }) {
+                                Image(systemName: "doc.on.doc")
+                                    .font(.caption)
+                            }
+                            .buttonStyle(.plain)
+                            .help(L10n.tr(.btnCopySkillTag))
+
+                            if skill.originServer.contains("AgentHub") {
+                                Button(action: {
+                                    _ = client.deleteSkill(name: skill.name)
+                                }) {
+                                    Image(systemName: "trash")
+                                        .font(.caption)
+                                        .foregroundColor(.red.opacity(0.8))
+                                }
+                                .buttonStyle(.plain)
+                                .help(L10n.tr(.btnDeleteSkill))
+                            }
+
+                            if !skill.content.isEmpty {
+                                Button(L10n.tr(.btnViewSkillMd)) {
+                                    selectedSkill = skill
+                                }
+                                .buttonStyle(.bordered)
+                                .font(.caption)
+                            }
                         }
                     }
                     .padding(.vertical, 4)
                 }
                 .listStyle(.inset)
             } else {
-                List(client.tools) { tool in
+                List(filteredTools) { tool in
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
                             Text(tool.namespacedName)
@@ -669,6 +957,22 @@ struct RecentProjectsBar: View {
                         .font(.caption2)
                 }
                 .buttonStyle(.borderless)
+
+                Button(action: {
+                    client.openProjectInFinder()
+                }) {
+                    Label(L10n.tr(.btnOpenProjectFinder), systemImage: "folder")
+                        .font(.caption2)
+                }
+                .buttonStyle(.bordered)
+
+                Button(action: {
+                    client.openProjectInTerminal()
+                }) {
+                    Label(L10n.tr(.btnOpenProjectTerminal), systemImage: "terminal")
+                        .font(.caption2)
+                }
+                .buttonStyle(.bordered)
 
                 Button(action: {
                     selectProjectFolder()
@@ -1040,6 +1344,13 @@ public struct ProjectMemoryView: View {
                         Text(L10n.tr(.focusinDirectiveTitle))
                             .font(.headline)
                         Spacer()
+                        Button(action: {
+                            client.copyToClipboard(client.focusinDirectiveText, toast: L10n.tr(.toastCopied))
+                        }) {
+                            Label(L10n.tr(.btnCopyFocusinPrompt), systemImage: "doc.on.doc")
+                        }
+                        .buttonStyle(.bordered)
+
                         Button(L10n.tr(.btnInjectFocusinToProject)) {
                             client.injectFocusinPrompt()
                             statusToast = "✔ " + L10n.tr(.btnInjectFocusinToProject)
