@@ -17,7 +17,7 @@ export function getConfigPath(): string {
 }
 
 export function getDefaultVaultPath(): string {
-  return path.join(getConfigDir(), 'vault');
+  return path.join(os.homedir(), 'AgentHub');
 }
 
 export function getDefaultEnvPath(): string {

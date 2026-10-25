@@ -142,6 +142,17 @@ public struct L10n {
         case btnUnpin
         case btnRemoveRecent
         case btnAutoScanProjects
+        case centralHubTitle
+        case centralHubSubtitle
+        case btnOpenHubInFinder
+        case btnOpenSkillsInFinder
+        case btnOpenMcpsInFinder
+        case btnCreateNewSkill
+        case newSkillModalTitle
+        case skillNamePlaceholder
+        case skillDescPlaceholder
+        case btnCancel
+        case btnCreate
 
         // Shared Memory View
         case sharedMemoryTitle
@@ -610,6 +621,72 @@ public struct L10n {
                 case .traditionalChinese: return "自動掃描本機專案"
                 case .simplifiedChinese: return "自动扫描本机项目"
                 case .english: return "Auto-Scan Projects"
+                }
+            case .centralHubTitle:
+                switch lang {
+                case .traditionalChinese: return "專用集中資料夾 (AgentHub)"
+                case .simplifiedChinese: return "专用集中文件夹 (AgentHub)"
+                case .english: return "Dedicated AgentHub"
+                }
+            case .centralHubSubtitle:
+                switch lang {
+                case .traditionalChinese: return "所有 Agent 的 Skills 與 MCP 集中儲存中心"
+                case .simplifiedChinese: return "所有 Agent 的 Skills 与 MCP 集中存储中心"
+                case .english: return "Central repository for all Agent Skills and MCPs"
+                }
+            case .btnOpenHubInFinder:
+                switch lang {
+                case .traditionalChinese: return "在 Finder 中打開 AgentHub"
+                case .simplifiedChinese: return "在 Finder 中打开 AgentHub"
+                case .english: return "Open AgentHub in Finder"
+                }
+            case .btnOpenSkillsInFinder:
+                switch lang {
+                case .traditionalChinese: return "打開 Skills 資料夾"
+                case .simplifiedChinese: return "打开 Skills 文件夹"
+                case .english: return "Open Skills in Finder"
+                }
+            case .btnOpenMcpsInFinder:
+                switch lang {
+                case .traditionalChinese: return "打開 MCPs 資料夾"
+                case .simplifiedChinese: return "打开 MCPs 文件夹"
+                case .english: return "Open MCPs in Finder"
+                }
+            case .btnCreateNewSkill:
+                switch lang {
+                case .traditionalChinese: return "➕ 新增 Skill 模組"
+                case .simplifiedChinese: return "➕ 新增 Skill 模块"
+                case .english: return "➕ New Skill Module"
+                }
+            case .newSkillModalTitle:
+                switch lang {
+                case .traditionalChinese: return "在 AgentHub 建立新 Skill 模組"
+                case .simplifiedChinese: return "在 AgentHub 创建新 Skill 模块"
+                case .english: return "Create New Skill in AgentHub"
+                }
+            case .skillNamePlaceholder:
+                switch lang {
+                case .traditionalChinese: return "Skill 名稱（如：swift-audio-helper）"
+                case .simplifiedChinese: return "Skill 名称（如：swift-audio-helper）"
+                case .english: return "Skill name (e.g. swift-audio-helper)"
+                }
+            case .skillDescPlaceholder:
+                switch lang {
+                case .traditionalChinese: return "Skill 功能說明、指令與規範提示詞..."
+                case .simplifiedChinese: return "Skill 功能说明、指令与规范提示词..."
+                case .english: return "Skill description, instructions, and prompt rules..."
+                }
+            case .btnCancel:
+                switch lang {
+                case .traditionalChinese: return "取消"
+                case .simplifiedChinese: return "取消"
+                case .english: return "Cancel"
+                }
+            case .btnCreate:
+                switch lang {
+                case .traditionalChinese: return "建立"
+                case .simplifiedChinese: return "创建"
+                case .english: return "Create"
                 }
 
             // Shared Memory View

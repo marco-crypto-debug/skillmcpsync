@@ -22,6 +22,10 @@ public class DaemonClient: ObservableObject {
 
     // Project Memory & Recents
     @Published public var currentProjectPath: String = "/Users/marco/Documents/FocusIn"
+    @Published public var agentHubPath: String = {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        return "\(home)/AgentHub"
+    }()
     @Published public var recentProjects: [RecentProjectItem] = []
     @Published public var projectActions: [ProjectActionItem] = []
     @Published public var projectMemoryRawText: String = ""
@@ -29,7 +33,7 @@ public class DaemonClient: ObservableObject {
     @Published public var currentSectors: ProjectCognitiveSectors = ProjectCognitiveSectors()
 
     @Published public var overview: DashboardOverview = DashboardOverview(
-        vaultPath: "~/.config/skillmcpsync/vault",
+        vaultPath: "~/AgentHub",
         gitBranch: "main",
         isGitClean: true,
         totalServers: 0,
@@ -384,26 +388,39 @@ public class DaemonClient: ObservableObject {
             }
         }
 
-        // D. Read Vault MCPs
-        let vaultMcpPath = "\(home)/.config/skillmcpsync/vault/mcp-servers.json"
-        if FileManager.default.fileExists(atPath: vaultMcpPath),
-           let data = try? Data(contentsOf: URL(fileURLWithPath: vaultMcpPath)),
-           let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] {
-            for (name, val) in json {
-                if let dict = val as? [String: Any], serverDict[name] == nil {
-                    let cmd = dict["command"] as? String
-                    let args = dict["args"] as? [String]
-                    serverDict[name] = MCPServerItem(
-                        name: name,
-                        type: dict["type"] as? String ?? "stdio",
-                        command: cmd,
-                        args: args,
-                        description: "Vault Synchronized Server",
-                        enabled: (dict["enabled"] as? Bool) ?? true,
-                        healthStatus: .healthy,
-                        latencyMs: 10,
-                        sourceAgents: ["Vault"]
-                    )
+        // D. Read AgentHub / Vault MCPs
+        let hubMcpPaths = [
+            "\(home)/AgentHub/mcps/mcp-servers.json",
+            "\(home)/AgentHub/mcp-servers.json",
+            "\(home)/.config/skillmcpsync/vault/mcp-servers.json"
+        ]
+        for hubPath in hubMcpPaths {
+            if FileManager.default.fileExists(atPath: hubPath),
+               let data = try? Data(contentsOf: URL(fileURLWithPath: hubPath)),
+               let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] {
+                for (name, val) in json {
+                    if let dict = val as? [String: Any] {
+                        let cmd = dict["command"] as? String
+                        let args = dict["args"] as? [String]
+                        if var existing = serverDict[name] {
+                            if !existing.sourceAgents.contains("AgentHub") {
+                                existing.sourceAgents.append("AgentHub")
+                            }
+                            serverDict[name] = existing
+                        } else {
+                            serverDict[name] = MCPServerItem(
+                                name: name,
+                                type: dict["type"] as? String ?? "stdio",
+                                command: cmd,
+                                args: args,
+                                description: "AgentHub Central Server",
+                                enabled: (dict["enabled"] as? Bool) ?? true,
+                                healthStatus: .healthy,
+                                latencyMs: 10,
+                                sourceAgents: ["AgentHub"]
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -414,6 +431,7 @@ public class DaemonClient: ObservableObject {
         var skillDict: [String: SkillItem] = [:]
 
         let skillDirectories: [(String, String)] = [
+            ("\(home)/AgentHub/skills", "AgentHub (Central)"),
             ("\(home)/.config/opencode/skills", "OpenCode"),
             ("\(home)/.gemini/antigravity/skills", "Antigravity"),
             ("\(home)/.agents/skills", "Shared Agent Hub"),
@@ -826,7 +844,7 @@ public class DaemonClient: ObservableObject {
     private func updateOverview() {
         let installedCount = agents.filter { $0.isInstalled }.count
         self.overview = DashboardOverview(
-            vaultPath: "~/.config/skillmcpsync/vault",
+            vaultPath: agentHubPath,
             gitBranch: "main",
             isGitClean: true,
             totalServers: servers.count,
@@ -1015,15 +1033,83 @@ public class DaemonClient: ObservableObject {
         let md = generateMemoryMarkdown()
         let homeDir = FileManager.default.homeDirectoryForCurrentUser
         let desktopFile = homeDir.appendingPathComponent("Desktop/MEMORY.md")
+        
+        // Also ensure copy in AgentHub/memory
+        let hubMemoryDir = URL(fileURLWithPath: "\(agentHubPath)/memory")
+        try? FileManager.default.createDirectory(at: hubMemoryDir, withIntermediateDirectories: true)
+        let hubMemoryFile = hubMemoryDir.appendingPathComponent("MEMORY.md")
+        try? md.write(to: hubMemoryFile, atomically: true, encoding: .utf8)
+
         do {
             try md.write(to: desktopFile, atomically: true, encoding: .utf8)
             statusMessage = "已成功儲存 Markdown 檔至：\(desktopFile.path)"
-            addLog("✔ 已匯出 MEMORY.md 至桌面：\(desktopFile.path)", isSuccess: true)
+            addLog("✔ 已匯出 MEMORY.md 至桌面及 AgentHub", isSuccess: true)
             return desktopFile.path
         } catch {
             statusMessage = "儲存失敗: \(error.localizedDescription)"
             addLog("匯出失敗: \(error.localizedDescription)", isError: true)
             return nil
+        }
+    }
+
+    // MARK: - AgentHub Actions
+
+    public func openAgentHubInFinder() {
+        let url = URL(fileURLWithPath: agentHubPath)
+        if !FileManager.default.fileExists(atPath: agentHubPath) {
+            try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        }
+        NSWorkspace.shared.open(url)
+    }
+
+    public func openSkillsInFinder() {
+        let skillsPath = "\(agentHubPath)/skills"
+        let url = URL(fileURLWithPath: skillsPath)
+        if !FileManager.default.fileExists(atPath: skillsPath) {
+            try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        }
+        NSWorkspace.shared.open(url)
+    }
+
+    public func openMcpsInFinder() {
+        let mcpsPath = "\(agentHubPath)/mcps"
+        let url = URL(fileURLWithPath: mcpsPath)
+        if !FileManager.default.fileExists(atPath: mcpsPath) {
+            try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        }
+        NSWorkspace.shared.open(url)
+    }
+
+    public func createNewSkill(name: String, description: String) -> Bool {
+        let sanitizedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: " ", with: "-")
+            .lowercased()
+        guard !sanitizedName.isEmpty else { return false }
+        let skillFolder = "\(agentHubPath)/skills/\(sanitizedName)"
+        let skillFile = "\(skillFolder)/SKILL.md"
+        do {
+            try FileManager.default.createDirectory(atPath: skillFolder, withIntermediateDirectories: true)
+            let descText = description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Custom skill module created in AgentHub" : description
+            let content = """
+            ---
+            name: \(sanitizedName)
+            description: \(descText)
+            ---
+
+            # \(sanitizedName)
+
+            \(descText)
+
+            ## Guidelines & Instructions
+            1. Describe instructions and best practices for agents using this skill.
+            """
+            try content.write(toFile: skillFile, atomically: true, encoding: .utf8)
+            addLog("✔ 已成功在 AgentHub 建立新 Skill: \(sanitizedName)", isSuccess: true)
+            refreshRealSystemState()
+            return true
+        } catch {
+            addLog("建立 Skill 失敗: \(error.localizedDescription)", isError: true)
+            return false
         }
     }
 }

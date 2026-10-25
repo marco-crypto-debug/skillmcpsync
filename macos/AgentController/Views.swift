@@ -112,6 +112,59 @@ public struct OverviewView: View {
                 .background(Color(NSColor.controlBackgroundColor))
                 .cornerRadius(12)
 
+                // Dedicated AgentHub Card
+                HStack(alignment: .center, spacing: 14) {
+                    Image(systemName: "folder.badge.gearshape.fill")
+                        .font(.system(size: 32))
+                        .foregroundColor(.blue)
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 8) {
+                            Text(L10n.tr(.centralHubTitle))
+                                .font(.headline)
+                            Text("~/AgentHub")
+                                .font(.system(.caption, design: .monospaced))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.blue.opacity(0.12))
+                                .foregroundColor(.blue)
+                                .cornerRadius(4)
+                        }
+                        Text(L10n.tr(.centralHubSubtitle))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    HStack(spacing: 8) {
+                        Button(action: {
+                            client.openSkillsInFinder()
+                        }) {
+                            Label(L10n.tr(.btnOpenSkillsInFinder), systemImage: "sparkles")
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button(action: {
+                            client.openMcpsInFinder()
+                        }) {
+                            Label(L10n.tr(.btnOpenMcpsInFinder), systemImage: "server.rack")
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button(action: {
+                            client.openAgentHubInFinder()
+                        }) {
+                            Label(L10n.tr(.btnOpenHubInFinder), systemImage: "folder.fill")
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
+                .padding(14)
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.blue.opacity(0.25), lineWidth: 1)
+                )
+
                 // Installed Agents Cards Grid
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
@@ -313,7 +366,13 @@ public struct ServersView: View {
                 Spacer()
                 TextField(L10n.tr(.searchServersPlaceholder), text: $searchText)
                     .textFieldStyle(.roundedBorder)
-                    .frame(width: 220)
+                    .frame(width: 200)
+                Button(action: {
+                    client.openMcpsInFinder()
+                }) {
+                    Label(L10n.tr(.btnOpenMcpsInFinder), systemImage: "folder")
+                }
+                .buttonStyle(.bordered)
                 Button(L10n.tr(.btnRefresh)) {
                     client.refreshRealSystemState()
                 }
@@ -383,6 +442,9 @@ public struct SkillsToolsView: View {
     @ObservedObject var langManager = LanguageManager.shared
     @State private var selectedTab: Int = 0
     @State private var selectedSkill: SkillItem?
+    @State private var showingNewSkillSheet: Bool = false
+    @State private var newSkillName: String = ""
+    @State private var newSkillDesc: String = ""
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -395,12 +457,29 @@ public struct SkillsToolsView: View {
                         .foregroundColor(.secondary)
                 }
                 Spacer()
+
+                Button(action: {
+                    client.openSkillsInFinder()
+                }) {
+                    Label(L10n.tr(.btnOpenSkillsInFinder), systemImage: "folder")
+                }
+                .buttonStyle(.bordered)
+
+                Button(action: {
+                    newSkillName = ""
+                    newSkillDesc = ""
+                    showingNewSkillSheet = true
+                }) {
+                    Label(L10n.tr(.btnCreateNewSkill), systemImage: "plus")
+                }
+                .buttonStyle(.borderedProminent)
+
                 Picker("", selection: $selectedTab) {
                     Text(L10n.tr(.tabSkills(client.skills.count))).tag(0)
                     Text(L10n.tr(.tabTools(client.tools.count))).tag(1)
                 }
                 .pickerStyle(.segmented)
-                .frame(width: 220)
+                .frame(width: 200)
             }
             .padding([.top, .horizontal])
 
@@ -478,6 +557,51 @@ public struct SkillsToolsView: View {
             }
             .padding()
             .frame(minWidth: 550, minHeight: 400)
+        }
+        .sheet(isPresented: $showingNewSkillSheet) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text(L10n.tr(.newSkillModalTitle))
+                    .font(.headline)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(L10n.tr(.skillNamePlaceholder))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    TextField("my-custom-skill", text: $newSkillName)
+                        .textFieldStyle(.roundedBorder)
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(L10n.tr(.skillDescPlaceholder))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    TextEditor(text: $newSkillDesc)
+                        .font(.system(.body, design: .monospaced))
+                        .frame(height: 120)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                        )
+                }
+
+                HStack {
+                    Spacer()
+                    Button(L10n.tr(.btnCancel)) {
+                        showingNewSkillSheet = false
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button(L10n.tr(.btnCreate)) {
+                        if client.createNewSkill(name: newSkillName, description: newSkillDesc) {
+                            showingNewSkillSheet = false
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(newSkillName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+            .padding(20)
+            .frame(width: 480)
         }
     }
 }

@@ -153,6 +153,21 @@ export class VaultManager {
   writeMcpServers(servers: Record<string, CanonicalMcpServer>): void {
     const p = path.join(this.vaultPath, 'mcp-servers.json');
     fs.writeFileSync(p, stringifyJson(servers), 'utf8');
+
+    // Also mirror to mcps/ folder for clean user visibility
+    const mcpsDir = path.join(this.vaultPath, 'mcps');
+    if (!fs.existsSync(mcpsDir)) {
+      try {
+        fs.mkdirSync(mcpsDir, { recursive: true });
+      } catch {
+        // ignore
+      }
+    }
+    try {
+      fs.writeFileSync(path.join(mcpsDir, 'mcp-servers.json'), stringifyJson(servers), 'utf8');
+    } catch {
+      // ignore
+    }
   }
 
   readSkills(): CanonicalSkill[] {
