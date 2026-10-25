@@ -36,6 +36,7 @@ public enum NavigationItem: String, CaseIterable, Identifiable {
 public struct OverviewView: View {
     @ObservedObject var client = DaemonClient.shared
     @ObservedObject var langManager = LanguageManager.shared
+    @State private var showingTemplateSheet: Bool = false
 
     private func formatTime(_ date: Date) -> String {
         let formatter = DateFormatter()
@@ -226,6 +227,13 @@ public struct OverviewView: View {
                     }
                     .buttonStyle(.bordered)
 
+                    Button(action: {
+                        showingTemplateSheet = true
+                    }) {
+                        Label(L10n.tr(.btnNewProjectPromptTemplate), systemImage: "sparkles.rectangle.stack")
+                    }
+                    .buttonStyle(.bordered)
+
                     Spacer()
 
                     Button(action: {
@@ -281,6 +289,9 @@ public struct OverviewView: View {
                 }
             }
             .padding(20)
+        }
+        .sheet(isPresented: $showingTemplateSheet) {
+            NewProjectPromptTemplateSheet()
         }
     }
 }
@@ -1287,6 +1298,142 @@ struct ActionCardView: View {
     }
 }
 
+// MARK: - New Project Prompt Template Sheet
+public struct NewProjectPromptTemplateSheet: View {
+    @Environment(\.dismiss) var dismiss
+    @ObservedObject var client = DaemonClient.shared
+    @ObservedObject var langManager = LanguageManager.shared
+
+    @State private var targetProjectName: String = ""
+    @State private var statusToast: String? = nil
+
+    private var currentTemplate: String {
+        let name = targetProjectName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? client.currentProjectName : targetProjectName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return client.generateMasterPromptTemplate(projectName: name)
+    }
+
+    public var body: some View {
+        VStack(spacing: 16) {
+            // Header
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "sparkles.rectangle.stack.fill")
+                            .foregroundColor(.blue)
+                            .font(.title2)
+                        Text(L10n.tr(.templateModalTitle))
+                            .font(.title3.bold())
+                    }
+                    Text(L10n.tr(.templateModalSubtitle))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+
+            // Key Mandate Badges
+            HStack(spacing: 8) {
+                Text(L10n.tr(.ruleBadgeTestFirst))
+                    .font(.caption2.bold())
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.green.opacity(0.12))
+                    .foregroundColor(.green)
+                    .cornerRadius(6)
+
+                Text(L10n.tr(.ruleBadgeGitCommit))
+                    .font(.caption2.bold())
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.blue.opacity(0.12))
+                    .foregroundColor(.blue)
+                    .cornerRadius(6)
+
+                Text(L10n.tr(.ruleBadgeMemoryCheck))
+                    .font(.caption2.bold())
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.purple.opacity(0.12))
+                    .foregroundColor(.purple)
+                    .cornerRadius(6)
+
+                Spacer()
+            }
+
+            // Target Project Name Input
+            HStack(spacing: 10) {
+                Text(L10n.tr(.labelCurrentProject) + ":")
+                    .font(.caption.bold())
+                    .foregroundColor(.secondary)
+                TextField("\(client.currentProjectName)", text: $targetProjectName)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(maxWidth: 240)
+                Spacer()
+            }
+
+            // Template Content Preview
+            ScrollView {
+                Text(currentTemplate)
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundColor(.primary)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(12)
+                    .background(Color(NSColor.textBackgroundColor))
+                    .cornerRadius(8)
+            }
+            .frame(maxHeight: 380)
+
+            if let toast = statusToast {
+                Text(toast)
+                    .font(.caption.bold())
+                    .foregroundColor(.green)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color.green.opacity(0.15))
+                    .cornerRadius(6)
+            }
+
+            // Footer Actions
+            HStack(spacing: 12) {
+                Button(action: {
+                    if let _ = client.exportMasterPromptTemplate(toPath: client.currentProjectPath) {
+                        statusToast = L10n.tr(.toastPromptExported)
+                    }
+                }) {
+                    Label(L10n.tr(.btnExportMasterPrompt), systemImage: "arrow.down.doc.fill")
+                }
+                .buttonStyle(.bordered)
+
+                Spacer()
+
+                Button(action: {
+                    client.copyToClipboard(currentTemplate, toast: L10n.tr(.toastPromptCopied))
+                    statusToast = L10n.tr(.toastPromptCopied)
+                }) {
+                    Label(L10n.tr(.btnCopyMasterPrompt), systemImage: "doc.on.doc.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.blue)
+
+                Button("完成") {
+                    dismiss()
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .padding(20)
+        .frame(minWidth: 640, minHeight: 520)
+        .background(Color(NSColor.windowBackgroundColor))
+    }
+}
+
 // MARK: - Project Memory View (OpenMemory & Enhanced UI)
 public struct ProjectMemoryView: View {
     @ObservedObject var client = DaemonClient.shared
@@ -1303,6 +1450,7 @@ public struct ProjectMemoryView: View {
     @State private var keyDecisions: String = ""
     @State private var isLoggerExpanded: Bool = false
     @State private var statusToast: String?
+    @State private var showingTemplateSheet: Bool = false
 
     var filteredActions: [ProjectActionItem] {
         client.projectActions.filter { act in
@@ -1340,6 +1488,15 @@ public struct ProjectMemoryView: View {
                             .foregroundColor(.secondary)
                     }
                     Spacer()
+
+                    Button(action: {
+                        showingTemplateSheet = true
+                    }) {
+                        Label(L10n.tr(.btnNewProjectPromptTemplate), systemImage: "sparkles.rectangle.stack")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.blue)
+
                     Button(action: {
                         client.refreshProjectMemory()
                     }) {
@@ -1367,6 +1524,13 @@ public struct ProjectMemoryView: View {
                             client.copyToClipboard(client.currentProjectDirectiveText, toast: L10n.tr(.toastCopied))
                         }) {
                             Label(L10n.tr(.btnCopyProjectDirective), systemImage: "doc.on.doc")
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button(action: {
+                            showingTemplateSheet = true
+                        }) {
+                            Label(L10n.tr(.btnNewProjectPromptTemplate), systemImage: "doc.text.badge.plus")
                         }
                         .buttonStyle(.bordered)
 
@@ -1662,6 +1826,9 @@ public struct ProjectMemoryView: View {
                 }
             }
             .padding(20)
+        }
+        .sheet(isPresented: $showingTemplateSheet) {
+            NewProjectPromptTemplateSheet()
         }
     }
 }

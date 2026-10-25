@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import path from 'node:path';
 import { Command } from 'commander';
 import { initCommand } from './commands/init.js';
 import { exportCommand } from './commands/export.js';
@@ -26,6 +27,10 @@ import {
   memoryDirectiveCommand,
   memoryPromptFocusinCommand,
 } from './commands/memory.js';
+import {
+  generateNewProjectPromptTemplate,
+  exportNewProjectPromptTemplate,
+} from './core/prompt_template.js';
 import { sync_all_resources } from './sync/sync_manager.js';
 import { SyncDaemon } from './sync/daemon.js';
 import { logger } from './utils/logger.js';
@@ -305,6 +310,36 @@ memoryCmd
   .option('-v, --vault <path>', 'Custom local vault directory path')
   .action((opts) => {
     memoryDirectiveCommand(opts);
+  });
+
+// template (New project master prompt template enforcing git commit & test-first verification)
+memoryCmd
+  .command('template [projectName]')
+  .description('Display or export master prompt template for new projects (enforcing git commit and test-first verification)')
+  .option('-e, --export [filename]', 'Export template file into project directory (default: MASTER_PROMPT.md)')
+  .option('-p, --project <path>', 'Target project directory (default: current directory)')
+  .option('-l, --lang <lang>', 'Template language (zh-Hant, zh-Hans, en)', 'zh-Hant')
+  .action((projectName, opts) => {
+    const targetDir = opts.project || process.cwd();
+    const resolvedName = projectName || path.basename(path.resolve(targetDir));
+    const tmpl = generateNewProjectPromptTemplate({
+      projectName: resolvedName,
+      language: opts.lang,
+    });
+
+    logger.header(`新專案 Agent 開工提示詞範本: ${resolvedName}`);
+    console.log(pc.cyan(tmpl));
+    logger.divider();
+
+    if (opts.export) {
+      const filename = typeof opts.export === 'string' ? opts.export : 'MASTER_PROMPT.md';
+      const outPath = exportNewProjectPromptTemplate(targetDir, {
+        projectName: resolvedName,
+        filename,
+        language: opts.lang,
+      });
+      logger.success(`Exported master prompt template to: ${pc.bold(pc.green(outPath))}`);
+    }
   });
 
 // reconcile (auto-sync tool across remote/local servers with file-lock safety)

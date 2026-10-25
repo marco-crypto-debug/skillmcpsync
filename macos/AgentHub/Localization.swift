@@ -111,6 +111,16 @@ public struct L10n {
         case projectDirectiveTitle(String)
         case projectDirectiveBody(String)
         case btnInjectDirectiveToProject
+        case btnNewProjectPromptTemplate
+        case templateModalTitle
+        case templateModalSubtitle
+        case btnCopyMasterPrompt
+        case btnExportMasterPrompt
+        case toastPromptCopied
+        case toastPromptExported
+        case ruleBadgeTestFirst
+        case ruleBadgeGitCommit
+        case ruleBadgeMemoryCheck
         case focusinDirectiveTitle
         case btnInjectFocusinToProject
         case focusinDirectiveBody
@@ -474,6 +484,66 @@ public struct L10n {
                 case .traditionalChinese: return "一鍵注入開工準則至本專案"
                 case .simplifiedChinese: return "一键注入开工准则至本项目"
                 case .english: return "Inject Directive to Project"
+                }
+            case .btnNewProjectPromptTemplate:
+                switch lang {
+                case .traditionalChinese: return "📋 開工 Prompt 範本"
+                case .simplifiedChinese: return "📋 开工 Prompt 范本"
+                case .english: return "📋 Prompt Template"
+                }
+            case .templateModalTitle:
+                switch lang {
+                case .traditionalChinese: return "🚀 新專案 Agent 開工核心規範範本"
+                case .simplifiedChinese: return "🚀 新项目 Agent 开工核心规范范本"
+                case .english: return "🚀 Master Agent Prompt & Workflow Template"
+                }
+            case .templateModalSubtitle:
+                switch lang {
+                case .traditionalChinese: return "強制約定：每次改動必須 Git Commit、改動前編寫測試、交付前確保 100% 驗證通過"
+                case .simplifiedChinese: return "强制约定：每次改动必须 Git Commit、改动前编写测试、交付前确保 100% 验证通过"
+                case .english: return "Mandatory: Git Commit on Every Change, Test-First & 100% Verification Before Delivery"
+                }
+            case .btnCopyMasterPrompt:
+                switch lang {
+                case .traditionalChinese: return "複製開工 Prompt 範本"
+                case .simplifiedChinese: return "复制开工 Prompt 范本"
+                case .english: return "Copy Master Prompt"
+                }
+            case .btnExportMasterPrompt:
+                switch lang {
+                case .traditionalChinese: return "輸出 MASTER_PROMPT.md 至本專案"
+                case .simplifiedChinese: return "输出 MASTER_PROMPT.md 至本项目"
+                case .english: return "Export MASTER_PROMPT.md to Project"
+                }
+            case .toastPromptCopied:
+                switch lang {
+                case .traditionalChinese: return "✔ 已複製開工提示詞範本至剪貼簿"
+                case .simplifiedChinese: return "✔ 已复制开工提示词范本至剪贴板"
+                case .english: return "✔ Copied Prompt Template to Clipboard"
+                }
+            case .toastPromptExported:
+                switch lang {
+                case .traditionalChinese: return "✔ 已成功輸出 MASTER_PROMPT.md 至專案根目錄"
+                case .simplifiedChinese: return "✔ 已成功输出 MASTER_PROMPT.md 至项目根目录"
+                case .english: return "✔ Created MASTER_PROMPT.md in project root"
+                }
+            case .ruleBadgeTestFirst:
+                switch lang {
+                case .traditionalChinese: return "🧪 每次改動前編寫測試，交付前 100% 驗證通過"
+                case .simplifiedChinese: return "🧪 每次改动前编写测试，交付前 100% 验证通过"
+                case .english: return "🧪 Test-First & 100% Verified Before Delivery"
+                }
+            case .ruleBadgeGitCommit:
+                switch lang {
+                case .traditionalChinese: return "📦 每次改動必須 Git Commit"
+                case .simplifiedChinese: return "📦 每次改动必须 Git Commit"
+                case .english: return "📦 Git Commit on Every Change"
+                }
+            case .ruleBadgeMemoryCheck:
+                switch lang {
+                case .traditionalChinese: return "🧠 開工前查閱 AGENT_MEMORY.md"
+                case .simplifiedChinese: return "🧠 开工前查阅 AGENT_MEMORY.md"
+                case .english: return "🧠 Inspect AGENT_MEMORY.md First"
                 }
             case .focusinDirectiveTitle:
                 switch lang {

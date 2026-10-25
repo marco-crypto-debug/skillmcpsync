@@ -5,6 +5,7 @@ export * from './core/secrets.js';
 export * from './core/vault.js';
 export * from './core/memory.js';
 export * from './core/project_memory.js';
+export * from './core/prompt_template.js';
 export * from './adapters/base.js';
 export * from './adapters/opencode.js';
 export * from './adapters/claude_desktop.js';
