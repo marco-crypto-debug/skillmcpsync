@@ -54,6 +54,24 @@ public struct SidebarView: View {
             VStack(spacing: 10) {
                 Divider()
 
+                // Official Website Link
+                Link(destination: URL(string: "https://agentcontroller.pages.dev")!) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "safari")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                        Text(L10n.tr(.btnOfficialWebsite))
+                            .font(.caption2.bold())
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal, 14)
+                }
+                .buttonStyle(.plain)
+
                 // Language Setting Menu
                 HStack(spacing: 6) {
                     Image(systemName: "globe")

@@ -1,7 +1,8 @@
 {
   "name": "skillmcpsync",
   "version": "1.0.0",
-  "description": "Multi-machine, multi-agent synchronization tool for MCP servers, skills, and tools via Git",
+  "description": "AgentHub: Multi-machine, multi-agent synchronization tool and native macOS app for MCP servers, skills, and tools via Git",
+  "homepage": "https://agentcontroller.pages.dev",
   "type": "module",
   "bin": {
     "skillmcpsync": "./dist/bin.js"

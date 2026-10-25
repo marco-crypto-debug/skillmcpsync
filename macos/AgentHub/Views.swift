@@ -46,9 +46,28 @@ public struct OverviewView: View {
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Top Language Switcher Bar
+                // Top Action & Language Bar
                 HStack {
+                    Link(destination: URL(string: "https://agentcontroller.pages.dev")!) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "safari")
+                                .foregroundColor(.blue)
+                            Text(L10n.tr(.btnOfficialWebsite))
+                                .font(.caption.bold())
+                                .foregroundColor(.blue)
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundColor(.blue.opacity(0.8))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+
                     Spacer()
+
                     HStack(spacing: 6) {
                         Image(systemName: "globe")
                             .foregroundColor(.secondary)

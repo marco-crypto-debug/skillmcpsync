@@ -64,6 +64,7 @@ public struct L10n {
         case navProjectMemory
         case navSharedMemory
         case languageSetting
+        case btnOfficialWebsite
 
         // Overview
         case syncHeroBadge
@@ -223,6 +224,12 @@ public struct L10n {
                 case .traditionalChinese: return "語言設定"
                 case .simplifiedChinese: return "语言设置"
                 case .english: return "Language"
+                }
+            case .btnOfficialWebsite:
+                switch lang {
+                case .traditionalChinese: return "官方網站"
+                case .simplifiedChinese: return "官方网站"
+                case .english: return "Official Website"
                 }
 
             // Overview

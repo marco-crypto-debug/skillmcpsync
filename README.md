@@ -1,8 +1,37 @@
-# skillmcpsync
+# AgentHub (`skillmcpsync`)
 
-**Universal, multi-agent synchronization for MCP servers, skills, and tools across servers and machines via Git.**
+<p align="center">
+  <strong>Universal Multi-Agent Synchronization for MCP Servers, Skills, and Shared Memory across Machines via Git.</strong>
+</p>
 
-`skillmcpsync` acts as a centralized bridge that synchronizes Model Context Protocol (MCP) servers, skills, and prompt rules across all your machines (laptops, dev servers, cloud VPSs) and coding agents (OpenCode, Claude Desktop, Claude Code, Cursor, Windsurf).
+<p align="center">
+  <a href="https://agentcontroller.pages.dev">🌐 <strong>Official Website: AgentHub</strong></a> • 
+  <a href="https://agenthub-8ym.pages.dev">Mirror Link</a> • 
+  <a href="https://github.com/marco-crypto-debug/skillmcpsync">GitHub Repository</a>
+</p>
+
+---
+
+## 🌟 Overview
+
+**AgentHub** (CLI: `skillmcpsync`) provides a native macOS application and multi-server CLI bridge to bi-directionally synchronize Model Context Protocol (MCP) servers, skills, project memories, and access-controlled shared blackboards across all your machines (laptops, dev servers, cloud VPSs) and coding agents:
+- **Claude Desktop** & **Claude Code CLI**
+- **Cursor**
+- **Windsurf**
+- **OpenCode**
+
+### 🌐 Official Website
+Visit the official product page for live documentation, feature highlights, and guides:
+- **Primary Website**: [https://agentcontroller.pages.dev](https://agentcontroller.pages.dev)
+- **AgentHub Pages**: [https://agenthub-8ym.pages.dev](https://agenthub-8ym.pages.dev)
+
+### 🍎 Native macOS App (`AgentHub.app`)
+AgentHub includes a zero-dependency, native SwiftUI desktop client featuring:
+- **Central Storage Hub**: Managed directory at `~/AgentHub/skills` and `~/AgentHub/mcps`.
+- **One-Click Bi-Directional Sync**: Synchronize newly installed tools across all detected agents with a single click.
+- **Project Memory Inspector**: View and switch recent project `.md` and `.cursorrules` instructions with pin/unpin support.
+- **Multi-Language Support**: Seamless toggling between Traditional Chinese (繁體中文), Simplified Chinese (简体中文), and English.
+- Prebuilt packaged installer: `dist/AgentHub.dmg`.
 
 ---
 
