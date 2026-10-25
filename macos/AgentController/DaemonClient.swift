@@ -500,8 +500,8 @@ public class DaemonClient: ObservableObject {
 
                 // Locate bin.js or node script
                 let possibleScriptPaths = [
-                    "/Users/marco/Documents/skillmcpsync/dist/bin.js",
-                    Bundle.main.resourcePath.map { "\($0)/dist/bin.js" } ?? ""
+                    Bundle.main.resourcePath.map { "\($0)/dist/bin.js" } ?? "",
+                    "/Users/marco/Documents/skillmcpsync/dist/bin.js"
                 ]
 
                 var scriptPath = "/Users/marco/Documents/skillmcpsync/dist/bin.js"

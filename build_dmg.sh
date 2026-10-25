@@ -87,11 +87,16 @@ cat << 'EOF' > "${APP_BUNDLE}/Contents/Info.plist"
 </plist>
 EOF
 
-# Copy embedded CLI runner into Resources
+# Copy self-contained CLI bundle into Resources
+echo "Bundling embedded backend into App Resources..."
+mkdir -p "${APP_BUNDLE}/Contents/Resources/dist"
+cp -R "${DIST_DIR}/"* "${APP_BUNDLE}/Contents/Resources/dist/"
+
 cat << 'EOF' > "${APP_BUNDLE}/Contents/Resources/skillmcpsync-helper"
 #!/bin/bash
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-node "${DIR}/../../dist/bin.js" "$@"
+export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin:$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node 2>/dev/null | tail -n 1)/bin"
+node "${DIR}/dist/bin.js" "$@"
 EOF
 chmod +x "${APP_BUNDLE}/Contents/Resources/skillmcpsync-helper"
 
