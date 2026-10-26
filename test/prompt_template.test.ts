@@ -37,6 +37,11 @@ test('PromptTemplate: generates template with required git commit and test-first
   assert.match(template, /技術方案|技术方案/);
   assert.match(template, /重複測試|重复测试/);
   assert.match(template, /人工驗證|人工验证/);
+  // 6. Must include Git tools and version rollback instructions for checking back versions
+  assert.match(template, /Git 工具|git tools/i);
+  assert.match(template, /回溯|回退|check back/i);
+  assert.match(template, /git log/i);
+  assert.match(template, /git diff/i);
 });
 
 test('PromptTemplate: generates English template with full lifecycle', () => {
@@ -56,6 +61,12 @@ test('PromptTemplate: generates English template with full lifecycle', () => {
   assert.match(template, /technical proposal/i);
   assert.match(template, /repeatedly/i);
   assert.match(template, /human verification/i);
+
+  // Git tools & check back version assertions
+  assert.match(template, /git tools/i);
+  assert.match(template, /check back version/i);
+  assert.match(template, /git log/i);
+  assert.match(template, /git diff/i);
 });
 
 test('PromptTemplate: exports MASTER_PROMPT.md file to target project directory', () => {

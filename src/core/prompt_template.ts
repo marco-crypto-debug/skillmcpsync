@@ -15,7 +15,7 @@ export interface ExportTemplateOptions extends PromptTemplateOptions {
 
 /**
  * Generates the master initial prompt template for any new project.
- * Enforces the complete 6-stage engineering lifecycle:
+ * Enforces the complete engineering lifecycle:
  * 1. Product Design (產品設計)
  * 2. Demo / Prototype Evaluation (評估 Demo 原型)
  * 3. Technical Proposal .txt File (給出技術方案 .txt 檔案)
@@ -23,7 +23,7 @@ export interface ExportTemplateOptions extends PromptTemplateOptions {
  * 5. AI Automated Repeated Testing (AI 自主重複測試)
  * 6. Final Human Verification (人工驗證)
  * 7. Continuous Re-testing on Every Modification (每次修改功能必先寫代碼並重新測試)
- * Plus Git commit on every change and OpenMemory tracking.
+ * Plus Git Tools, atomic Git commit on every change for version rollback convenience, and OpenMemory tracking.
  */
 export function generateNewProjectPromptTemplate(options: PromptTemplateOptions = {}): string {
   const projectName = options.projectName || 'NewProject';
@@ -75,9 +75,14 @@ ${testRule ? `### 1. 🧪 Test-First & 100% Verification Before Delivery (測試
 - **Mandatory Pre-requisite**: Before making any code changes, always write or update corresponding unit/integration tests covering the intended behavior and edge cases.
 - **Verification Guarantee**: Before delivering your work to the user, you MUST run all test suites and ensure 100% tests pass with zero failures and zero regressions.` : ''}
 
-${gitRule ? `### 2. 📦 Atomic Git Commit on Every Change (每次改動必須 Git Commit)
-- **Immediate Version Control**: For every distinct feature modification, bug fix, or refactor, you must execute a clean \`git commit\`.
-- **Commit Standards**: Write clear, imperative, and structured commit messages (e.g. \`feat: ...\`, \`fix: ...\`, \`test: ...\`). Never leave modified files unstaged without committing.` : ''}
+${gitRule ? `### 2. 📦 Git Tools & Version History Rollback Protocol (Git 工具使用與版本回溯規範)
+- **Remember: Every change please Git commit!** For every distinct feature modification, bug fix, or refactor, you must execute an immediate, atomic \`git commit\`.
+- **Convenience to Check Back Versions**: The primary objective is to give users and agents complete convenience to check back versions, inspect line-by-line diffs, isolate regressions, and roll back safely whenever needed.
+- **Active Use of Git Tools**:
+  - \`git status\` & \`git diff\`: Inspect exact modified lines before staging to avoid collateral changes.
+  - \`git commit -m "feat/fix/test: ..."\`: Atomic commits with clear, descriptive messages. Never leave files unstaged.
+  - \`git log --oneline -n 10\`: Inspect recent commits to easily check back version history.
+  - \`git checkout <hash> -- <file>\` or \`git restore <file>\`: Conveniently check back or restore files to a previous known-good version if unexpected issues arise.` : ''}
 
 ${memoryRule ? `### 3. 🧠 Pre-Task Inspection of AGENT_MEMORY.md (開工前必讀專案記憶)
 - **Read Memory First**: Before executing instructions or generating new code, ALWAYS inspect \`AGENT_MEMORY.md\` in the project root and search shared memory.
@@ -104,7 +109,7 @@ Before starting any code changes:
 5. Implement changes with precision, preserving existing code style.
 6. Repeatedly run the full test suite and confirm 100% pass before presenting the solution.
 7. Provide a concise human verification checklist.
-8. Execute a descriptive git commit for every change made.
+8. Git Tools & Version Control: Remember every change please git commit to give convenience to check back versions anytime (use git log, git diff, and atomic commits).
 9. Log your completed actions and decisions into \`AGENT_MEMORY.md\`.
 \`\`\`
 `.trim();
@@ -152,9 +157,14 @@ ${testRule ? `### 1. 🧪 每次改动前必须编写/更新测试，交付前�
 - **改动前编写测试**：在进行任何业务逻辑或程式码改动前，必须先编写或同步更新相对应的单元测试与整合测试用例。
 - **交付前全体验证**：在将成果交付给用户前，必须于本地实际运行测试命令（例如 \`npm test\`、\`cargo test\`、\`pytest\`），确保所有测试与验证 100% 全部通过，严禁提交未经测试的代码。` : ''}
 
-${gitRule ? `### 2. 📦 每次改动后必须执行 Git Commit (Atomic Versioning)
-- **即时提交**：每完成一个独立模块改动、Bug 修复或功能实现，必须立即执行 \`git commit\`。
-- **清晰语义规范**：Commit 讯息必须明确传达修改目的（例如 \`feat: ...\`、\`fix: ...\`、\`test: ...\`），切勿将多个无关改动混为一谈。` : ''}
+${gitRule ? `### 2. 📦 Git 工具使用与版本回溯规范 (Git Tools & Version Rollback)
+- **牢记：每次改动必须 Git Commit！** 每完成一个独立模块改动、Bug 修复或功能实现，必须立即执行 \`git commit\`。
+- **便利随刻回溯历史版本 (Convenience to Check Back Versions)**：每一次提交的根本目的，是给予用户与 Agent 随时检视历史变动、比对程式差异、排查 Regression 回归以及在必要时无损回退历史版本的最大便利。
+- **善用 Git 工具命令**：
+  - \`git status\` 与 \`git diff\`：在暂存前逐行检视改动，杜绝误动不相关程式码。
+  - \`git commit -m "feat/fix/test: ..."\`：颗粒度适中的原子化提交，绝不遗留未追踪的脏工作区。
+  - \`git log --oneline -n 10\`：随时检视提交历程，便利快速回溯与定位历史版本。
+  - \`git checkout <commit_hash> -- <file>\` 或 \`git restore <file>\`：若出现异常，可快速安全回退单一档案至已知正常版本。` : ''}
 
 ${memoryRule ? `### 3. 🧠 开工前强制查阅 AGENT_MEMORY.md 与 Shared Memory
 - **先读记忆再写代码**：在开始执行任务前，务必先完整阅读项目根目录的 \`AGENT_MEMORY.md\` 与跨 Agent 共享记忆库。
@@ -180,7 +190,7 @@ ${memoryRule ? `### 3. 🧠 开工前强制查阅 AGENT_MEMORY.md 与 Shared Mem
 5. 执行程式码实作，严守防御性原则与架构约定。
 6. AI 自主重复测试，交付给使用者前必须确保所有测试与验证 100% 全部通过。
 7. 提供清晰的人工验证步骤。
-8. 每次改动完成必须立即进行描述清晰的 git commit。
+8. 善用 Git 工具并牢记：每次改动必须即时 git commit，方便随时回溯历史版本（使用 git log 与 git diff 检视）。
 9. 完成后将本次工作摘要与核心决策写入 \`AGENT_MEMORY.md\` 的历程时间轴。
 \`\`\`
 `.trim();
@@ -228,9 +238,14 @@ ${testRule ? `### 1. 🧪 每次改動前必須編寫/更新測試，交付前�
 - **改動前編寫測試**：在進行任何業務邏輯或程式碼改動前，必須先編寫或同步更新相對應的單元測試與整合測試用例。
 - **交付前全體驗證**：在將成果交付給用戶前，必須於本機實際執行測試指令（例如 \`npm test\`、\`cargo test\`、\`pytest\`），確保所有測試與驗證 100% 全部通過，嚴禁交付未經驗證的程式碼。` : ''}
 
-${gitRule ? `### 2. 📦 每次改動後必須執行 Git Commit (Atomic Versioning)
-- **即時提交**：每完成一個獨立模組改動、Bug 修復或功能實作，必須立即執行 \`git commit\`。
-- **清晰語意規範**：Commit 訊息必須明確傳達修改目的（例如 \`feat: ...\`、\`fix: ...\`、\`test: ...\`），切勿將多個無關改動混為一談。` : ''}
+${gitRule ? `### 2. 📦 Git 工具使用與版本回溯規範 (Git Tools & Version Rollback)
+- **牢記：每次改動必須 Git Commit！** 每完成一個獨立模組改動、Bug 修復或功能實作，必須立即執行 \`git commit\`。
+- **便利隨時回溯歷史版本 (Convenience to Check Back Versions)**：每一次提交的核心價值在於提供使用者與 Agent 隨時調閱歷史紀錄、檢視程式碼差異、定位問題與安全回退版本的絕對便利。
+- **善用 Git 工具命令**：
+  - \`git status\` 與 \`git diff\`：在暫存前逐行檢視改動，杜絕誤動不相關程式碼。
+  - \`git commit -m "feat/fix/test: ..."\`：原子化提交，訊息清晰明確，絕不遺留未追蹤的髒工作區。
+  - \`git log --oneline -n 10\`：隨時調閱提交歷史，便利快速回溯與檢視各版本。
+  - \`git checkout <commit_hash> -- <file>\` 或 \`git restore <file>\`：若出現問題，可快速安全回退單一檔案至已知正常版本。` : ''}
 
 ${memoryRule ? `### 3. 🧠 開工前強制查閱 AGENT_MEMORY.md 與 Shared Memory
 - **先讀記憶再寫程式碼**：在開始執行任務前，務必先完整閱讀專案根目錄的 \`AGENT_MEMORY.md\` 與跨 Agent 共享記憶庫。
@@ -256,7 +271,7 @@ ${memoryRule ? `### 3. 🧠 開工前強制查閱 AGENT_MEMORY.md 與 Shared Mem
 5. 執行程式碼實作，嚴守防禦性原則與架構約定。
 6. AI 自主重複測試，交付給使用者前必須確保所有測試與驗證 100% 全部通過。
 7. 提供清晰的人工驗證步驟。
-8. 每次改動完成必須立即進行描述清晰的 git commit。
+8. 善用 Git 工具並牢記：每次改動必須即時 git commit，方便隨時回溯歷史版本（使用 git log 與 git diff 檢視）。
 9. 完成後將本次工作摘要與核心決策寫入 \`AGENT_MEMORY.md\` 的歷程時間軸。
 \`\`\`
 `.trim();

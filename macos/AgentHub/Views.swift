@@ -1376,6 +1376,14 @@ public struct NewProjectPromptTemplateSheet: View {
                         .foregroundColor(.blue)
                         .cornerRadius(6)
 
+                    Text(L10n.tr(.ruleBadgeGitTools))
+                        .font(.caption2.bold())
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.indigo.opacity(0.12))
+                        .foregroundColor(.indigo)
+                        .cornerRadius(6)
+
                     Text(L10n.tr(.ruleBadgeMemoryCheck))
                         .font(.caption2.bold())
                         .padding(.horizontal, 8)

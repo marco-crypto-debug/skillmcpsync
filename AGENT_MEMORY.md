@@ -14,6 +14,10 @@
 
 ## 🕒 1. Episodic Action Timeline (以前的 Agent 做了些什麼)
 <!-- EPISODIC_LOG_START -->
+### 🔹 [2026-10-26T12:50:00.000Z] @Antigravity
+- **Summary**: Embedded Git tools & version rollback protocol into Master Prompt Template and Project Directives
+  - **Files Touched**: `src/core/prompt_template.ts`, `src/core/project_memory.ts`, `test/prompt_template.test.ts`, `macos/AgentHub/Localization.swift`, `macos/AgentHub/DaemonClient.swift`, `macos/AgentHub/Views.swift`
+  - **Key Decisions**: Enforced immediate atomic git commit on every change with explicit purpose: maximum convenience to check back versions anytime. Added Git tools commands (`git status`, `git diff`, `git log`, `git checkout / restore`) to prompt template, kickoff briefings, and app badges.
 ### 🔹 [2026-10-26T12:43:00.000Z] @Antigravity
 - **Summary**: Implemented 6-stage feature engineering lifecycle in Master Prompt Template and Agent Directives
   - **Files Touched**: `src/core/prompt_template.ts`, `src/core/project_memory.ts`, `macos/AgentHub/Localization.swift`, `macos/AgentHub/DaemonClient.swift`, `macos/AgentHub/Views.swift`, `test/prompt_template.test.ts`

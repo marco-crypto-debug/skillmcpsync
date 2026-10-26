@@ -120,6 +120,7 @@ public struct L10n {
         case toastPromptExported
         case ruleBadgeTestFirst
         case ruleBadgeGitCommit
+        case ruleBadgeGitTools
         case ruleBadgeMemoryCheck
         case ruleBadgeProductDesign
         case ruleBadgeAIReTest
@@ -475,11 +476,11 @@ public struct L10n {
             case .projectDirectiveBody(let name):
                 switch lang {
                 case .traditionalChinese:
-                    return "標準研發閉環：產品設計 ➔ Demo評估 ➔ 產出技術方案 (.txt) ➔ 查閱 \(name) 的 AGENT_MEMORY.md ➔ 改動前編寫測試 ➔ 實現代碼 ➔ AI自主重複測試 ➔ 交付前100%通過與人工驗證 ➔ 每次改動Git Commit。每次重大決策自動回寫記憶庫。"
+                    return "標準研發閉環：產品設計 ➔ Demo評估 ➔ 產出技術方案 (.txt) ➔ 查閱 \(name) 的 AGENT_MEMORY.md ➔ 改動前編寫測試 ➔ 實現代碼 ➔ AI自主重複測試 ➔ 交付前100%通過與人工驗證 ➔ 善用Git工具與每次改動Git Commit（便利隨時回溯版本）。每次重大決策自動回寫記憶庫。"
                 case .simplifiedChinese:
-                    return "标准研发闭环：产品设计 ➔ Demo评估 ➔ 产出技术方案 (.txt) ➔ 查阅 \(name) 的 AGENT_MEMORY.md ➔ 改动前编写测试 ➔ 实现代码 ➔ AI自主重复测试 ➔ 交付前100%通过与人工验证 ➔ 每次改动Git Commit。每次重大决策自动回写记忆库。"
+                    return "标准研发闭环：产品设计 ➔ Demo评估 ➔ 产出技术方案 (.txt) ➔ 查阅 \(name) 的 AGENT_MEMORY.md ➔ 改动前编写测试 ➔ 实现代码 ➔ AI自主重复测试 ➔ 交付前100%通过与人工验证 ➔ 善用Git工具与每次改动Git Commit（便利随时回溯版本）。每次重大决策自动回写记忆库。"
                 case .english:
-                    return "Engineering Lifecycle: Product Design ➔ Demo Eval ➔ Tech Proposal (.txt) ➔ Inspect \(name)'s AGENT_MEMORY.md ➔ Write Tests First ➔ Implement Code ➔ AI Repeated Testing ➔ 100% Pass & Human Verification ➔ Git Commit on Every Change."
+                    return "Engineering Lifecycle: Product Design ➔ Demo Eval ➔ Tech Proposal (.txt) ➔ Inspect \(name)'s AGENT_MEMORY.md ➔ Write Tests First ➔ Implement Code ➔ AI Repeated Testing ➔ 100% Pass & Human Verification ➔ Git Tools & Commit Every Change (Convenience to Check Back Versions)."
                 }
             case .btnInjectDirectiveToProject:
                 switch lang {
@@ -537,9 +538,15 @@ public struct L10n {
                 }
             case .ruleBadgeGitCommit:
                 switch lang {
-                case .traditionalChinese: return "📦 每次改動必須 Git Commit"
-                case .simplifiedChinese: return "📦 每次改动必须 Git Commit"
-                case .english: return "📦 Git Commit on Every Change"
+                case .traditionalChinese: return "📦 每次改動必須 Git Commit（便利隨時回溯版本）"
+                case .simplifiedChinese: return "📦 每次改动必须 Git Commit（便利随时回溯版本）"
+                case .english: return "📦 Git Commit Every Change (Convenience to Check Back Versions)"
+                }
+            case .ruleBadgeGitTools:
+                switch lang {
+                case .traditionalChinese: return "🔧 善用 Git 工具 (git log/diff/restore)"
+                case .simplifiedChinese: return "🔧 善用 Git 工具 (git log/diff/restore)"
+                case .english: return "🔧 Git Tools Protocol (git log/diff/restore)"
                 }
             case .ruleBadgeMemoryCheck:
                 switch lang {

@@ -22,8 +22,9 @@ export function getProjectAgentDirective(projectName: string): string {
 > 3. **改動前編寫測試與 AI 自主重複測試**：
 >    - 每次修改功能前，必須先編寫或更新相關測試用例。
 >    - 程式碼實作完成後，AI 必須自主重複運行測試指令，確保 100% 通過無回歸後方可交付，並準備人工驗證步驟。
-> 4. **原子化 Git Commit**：
->    - 每次獨立功能完成或 Bug 修復，必須立即執行清楚語意的 \`git commit\`。
+> 4. **Git 工具與版本回溯規範 (Git Tools & Version Rollback)**：
+>    - **每次改動必須 Git Commit**：每完成一個獨立功能或 Bug 修復，必須立即執行清楚語意的 \`git commit\`。
+>    - **便利隨時回溯歷史版本 (Convenience to Check Back Versions)**：確保使用者與 Agent 可隨時利用 \`git log\`、\`git diff\` 檢視歷史變更，並在需要時透過 \`git checkout / restore\` 安全回退版本。
 > 5. **重要決策自動記入歷程時間軸**：
 >    - 每完成一輪重要決策、找到 bug 根因、確認架構選擇，自動寫入 \`AGENT_MEMORY.md\`（標記來源 Agent）。
 > 6. **長期高價值原則**：
