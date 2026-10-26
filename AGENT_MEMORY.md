@@ -1,7 +1,7 @@
 # 🧠 Project Agent Memory: skillmcpsync
 
 > **專案名稱 Project**: `skillmcpsync`  
-> **最後更新時間 Last Updated**: `2026-10-24T17:29:45.351Z`  
+> **最後更新時間 Last Updated**: `2026-10-26T10:55:30.000Z`  
 > **適用 Agents**: OpenCode, Claude Desktop, Claude Code, Cursor, Windsurf, Copilot
 
 ---
@@ -14,6 +14,18 @@
 
 ## 🕒 1. Episodic Action Timeline (以前的 Agent 做了些什麼)
 <!-- EPISODIC_LOG_START -->
+### 🔹 [2026-10-26T12:43:00.000Z] @Antigravity
+- **Summary**: Implemented 6-stage feature engineering lifecycle in Master Prompt Template and Agent Directives
+  - **Files Touched**: `src/core/prompt_template.ts`, `src/core/project_memory.ts`, `macos/AgentHub/Localization.swift`, `macos/AgentHub/DaemonClient.swift`, `macos/AgentHub/Views.swift`, `test/prompt_template.test.ts`
+  - **Key Decisions**: Integrated product design, demo prototype evaluation, technical proposal .txt file generation, implementation, AI automated repeated testing, human verification checklist, and continuous re-testing loop on every feature modification.
+### 🔹 [2026-10-26T10:55:30.000Z] @OmO
+- **Summary**: Connected website repository to GitHub and Cloudflare Pages with auto-deployment
+  - **Files Touched**: `AGENT_MEMORY.md`
+  - **Key Decisions**: Created Git-connected Cloudflare Pages project `skillmcpsync` linked to GitHub repo `marco-crypto-debug/skillmcpsync` (branch `main`, root `/`, output dir `site`). Triggered and verified successful build & live URL (https://skillmcpsync.pages.dev).
+### 🔹 [2026-10-26T10:46:07.144Z] @OmO
+- **Summary**: Installed `omo-ai` globally via `bun add -g omo-ai` (v5.1.48)
+  - **Files Touched**: `AGENT_MEMORY.md`
+  - **Key Decisions**: Installed and verified global binary `omo` (5.1.48)
 ### 🔹 [2026-10-24T17:29:45.350Z] @Antigravity
 - **Summary**: Implemented OpenMemory cognitive sectors and in-project AGENT_MEMORY.md rule injection
   - **Files Touched**: `src/core/project_memory.ts`, `src/bin.ts`

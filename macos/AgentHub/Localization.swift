@@ -121,6 +121,8 @@ public struct L10n {
         case ruleBadgeTestFirst
         case ruleBadgeGitCommit
         case ruleBadgeMemoryCheck
+        case ruleBadgeProductDesign
+        case ruleBadgeAIReTest
         case focusinDirectiveTitle
         case btnInjectFocusinToProject
         case focusinDirectiveBody
@@ -473,11 +475,11 @@ public struct L10n {
             case .projectDirectiveBody(let name):
                 switch lang {
                 case .traditionalChinese:
-                    return "每次開工前，優先查閱 \(name) 的 AGENT_MEMORY.md 與 shared memory：了解架構約束、專案規範、過往失敗方案與踩坑記錄。\n每完成重要決策、修復 bug 或確認架構，自動將精簡總結寫入專案記憶庫（標記來源 Agent）。\n不記錄閒聊瑣事，只留存長遠有用的專案知識。"
+                    return "標準研發閉環：產品設計 ➔ Demo評估 ➔ 產出技術方案 (.txt) ➔ 查閱 \(name) 的 AGENT_MEMORY.md ➔ 改動前編寫測試 ➔ 實現代碼 ➔ AI自主重複測試 ➔ 交付前100%通過與人工驗證 ➔ 每次改動Git Commit。每次重大決策自動回寫記憶庫。"
                 case .simplifiedChinese:
-                    return "每次开工前，优先查阅 \(name) 的 AGENT_MEMORY.md 与 shared memory：了解架构约束、项目规范、过往失败方案与踩坑记录。\n每完成重要决策、修复 bug 或确认架构，自动将精简总结写入项目记忆库（标记来源 Agent）。\n不记录闲聊琐事，只留存长远有用的项目知识。"
+                    return "标准研发闭环：产品设计 ➔ Demo评估 ➔ 产出技术方案 (.txt) ➔ 查阅 \(name) 的 AGENT_MEMORY.md ➔ 改动前编写测试 ➔ 实现代码 ➔ AI自主重复测试 ➔ 交付前100%通过与人工验证 ➔ 每次改动Git Commit。每次重大决策自动回写记忆库。"
                 case .english:
-                    return "Before starting work, always inspect \(name)'s AGENT_MEMORY.md and shared memory: review architecture constraints, project conventions, past failed attempts, and gotchas.\nAfter key decisions, bug fixes, or architectural choices, write a concise summary into project memory tagging the source agent.\nOnly persist high-value, long-term project knowledge."
+                    return "Engineering Lifecycle: Product Design ➔ Demo Eval ➔ Tech Proposal (.txt) ➔ Inspect \(name)'s AGENT_MEMORY.md ➔ Write Tests First ➔ Implement Code ➔ AI Repeated Testing ➔ 100% Pass & Human Verification ➔ Git Commit on Every Change."
                 }
             case .btnInjectDirectiveToProject:
                 switch lang {
@@ -499,9 +501,9 @@ public struct L10n {
                 }
             case .templateModalSubtitle:
                 switch lang {
-                case .traditionalChinese: return "強制約定：每次改動必須 Git Commit、改動前編寫測試、交付前確保 100% 驗證通過"
-                case .simplifiedChinese: return "强制约定：每次改动必须 Git Commit、改动前编写测试、交付前确保 100% 验证通过"
-                case .english: return "Mandatory: Git Commit on Every Change, Test-First & 100% Verification Before Delivery"
+                case .traditionalChinese: return "完整研發閉環：產品設計 ➔ Demo評估 ➔ 技術方案(.txt) ➔ 實現代碼 ➔ AI重複測試 ➔ 人工驗證 ➔ 每次改動Git Commit"
+                case .simplifiedChinese: return "完整研发闭环：产品设计 ➔ Demo评估 ➔ 技术方案(.txt) ➔ 实现代码 ➔ AI重复测试 ➔ 人工验证 ➔ 每次改动Git Commit"
+                case .english: return "Full Lifecycle: Product Design ➔ Demo Eval ➔ Tech Proposal (.txt) ➔ Coding ➔ AI Re-Testing ➔ Human Verification ➔ Git Commit on Every Change"
                 }
             case .btnCopyMasterPrompt:
                 switch lang {
@@ -544,6 +546,18 @@ public struct L10n {
                 case .traditionalChinese: return "🧠 開工前查閱 AGENT_MEMORY.md"
                 case .simplifiedChinese: return "🧠 开工前查阅 AGENT_MEMORY.md"
                 case .english: return "🧠 Inspect AGENT_MEMORY.md First"
+                }
+            case .ruleBadgeProductDesign:
+                switch lang {
+                case .traditionalChinese: return "🎨 產品設計與技術方案 (.txt)"
+                case .simplifiedChinese: return "🎨 产品设计与技术方案 (.txt)"
+                case .english: return "🎨 Product Design & Tech Proposal (.txt)"
+                }
+            case .ruleBadgeAIReTest:
+                switch lang {
+                case .traditionalChinese: return "🤖 AI 重複測試與人工驗證"
+                case .simplifiedChinese: return "🤖 AI 重复测试与人工验证"
+                case .english: return "🤖 AI Re-Testing & Human Verification"
                 }
             case .focusinDirectiveTitle:
                 switch lang {

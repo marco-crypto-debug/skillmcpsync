@@ -29,9 +29,17 @@ test('PromptTemplate: generates template with required git commit and test-first
 
   // 4. Must mandate reading AGENT_MEMORY.md before tasks
   assert.match(template, /AGENT_MEMORY\.md/);
+
+  // 5. Must include product design, demo evaluation, technical proposal .txt, AI repeated tests, human verification
+  assert.match(template, /產品設計|产品设计/);
+  assert.match(template, /demo|原型/i);
+  assert.match(template, /\.txt/);
+  assert.match(template, /技術方案|技术方案/);
+  assert.match(template, /重複測試|重复测试/);
+  assert.match(template, /人工驗證|人工验证/);
 });
 
-test('PromptTemplate: generates English template properly', () => {
+test('PromptTemplate: generates English template with full lifecycle', () => {
   const template = generateNewProjectPromptTemplate({
     projectName: 'CryptoSync',
     language: 'en',
@@ -42,6 +50,12 @@ test('PromptTemplate: generates English template properly', () => {
   assert.match(template, /test/i);
   assert.match(template, /before delivery|deliver/i);
   assert.match(template, /AGENT_MEMORY\.md/);
+  assert.match(template, /product design/i);
+  assert.match(template, /demo/i);
+  assert.match(template, /\.txt/i);
+  assert.match(template, /technical proposal/i);
+  assert.match(template, /repeatedly/i);
+  assert.match(template, /human verification/i);
 });
 
 test('PromptTemplate: exports MASTER_PROMPT.md file to target project directory', () => {

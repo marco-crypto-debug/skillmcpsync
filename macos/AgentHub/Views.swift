@@ -1338,32 +1338,54 @@ public struct NewProjectPromptTemplateSheet: View {
             }
 
             // Key Mandate Badges
-            HStack(spacing: 8) {
-                Text(L10n.tr(.ruleBadgeTestFirst))
-                    .font(.caption2.bold())
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.green.opacity(0.12))
-                    .foregroundColor(.green)
-                    .cornerRadius(6)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    Text(L10n.tr(.ruleBadgeProductDesign))
+                        .font(.caption2.bold())
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.orange.opacity(0.12))
+                        .foregroundColor(.orange)
+                        .cornerRadius(6)
 
-                Text(L10n.tr(.ruleBadgeGitCommit))
-                    .font(.caption2.bold())
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.blue.opacity(0.12))
-                    .foregroundColor(.blue)
-                    .cornerRadius(6)
+                    Text(L10n.tr(.ruleBadgeAIReTest))
+                        .font(.caption2.bold())
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.teal.opacity(0.12))
+                        .foregroundColor(.teal)
+                        .cornerRadius(6)
 
-                Text(L10n.tr(.ruleBadgeMemoryCheck))
-                    .font(.caption2.bold())
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.purple.opacity(0.12))
-                    .foregroundColor(.purple)
-                    .cornerRadius(6)
+                    Text(L10n.tr(.ruleBadgeTestFirst))
+                        .font(.caption2.bold())
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.green.opacity(0.12))
+                        .foregroundColor(.green)
+                        .cornerRadius(6)
 
-                Spacer()
+                    Spacer()
+                }
+
+                HStack(spacing: 8) {
+                    Text(L10n.tr(.ruleBadgeGitCommit))
+                        .font(.caption2.bold())
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.blue.opacity(0.12))
+                        .foregroundColor(.blue)
+                        .cornerRadius(6)
+
+                    Text(L10n.tr(.ruleBadgeMemoryCheck))
+                        .font(.caption2.bold())
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.purple.opacity(0.12))
+                        .foregroundColor(.purple)
+                        .cornerRadius(6)
+
+                    Spacer()
+                }
             }
 
             // Target Project Name Input

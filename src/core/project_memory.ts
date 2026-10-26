@@ -14,13 +14,19 @@ export function getProjectAgentDirective(projectName: string): string {
   return `
 # 🎯 ${projectName} 專案 Agent 開工核心準則 (${projectName} Agent Directive)
 > ⚠️ **所有 Agent (OpenCode / Claude / Cursor / Windsurf) 必讀核心約束：**
-> 1. **每次開工前，優先從 AGENT_MEMORY.md 與 shared memory 搜尋本專案相關**：
->    - 🏛 **架構約束** (專案結構邊界、技術棧規範、依賴與約定)
->    - 🛠 **工作規範** (型別檢查、代碼風格、測試驗證規範)
->    - 🚫 **過往失敗方案與踩坑記錄** (避免重複過去嘗試失敗的做法)
-> 2. **每完成一輪重要決策、找到 bug 根因、確認一個架構選擇**：
->    - 自動寫入專案記憶庫 / \`AGENT_MEMORY.md\`，標記來源 Agent（OpenCode / Claude / Cursor / Windsurf）。
-> 3. **長期高價值原則**：
+> 1. **產品設計與技術方案先行**：
+>    - 任何新功能必須先進行產品設計思考，評估是否需要構建 Demo 原型。
+>    - 正式編碼前，產出結構清晰的技術方案檔案 (\`TECH_PROPOSAL.txt\` 或 \`<feature>_proposal.txt\`)。
+> 2. **每次開工前，優先查閱專案記憶庫**：
+>    - 閱讀 \`AGENT_MEMORY.md\` 與 shared memory：掌握架構約定、技術棧規範、過往失敗方案與踩坑記錄。
+> 3. **改動前編寫測試與 AI 自主重複測試**：
+>    - 每次修改功能前，必須先編寫或更新相關測試用例。
+>    - 程式碼實作完成後，AI 必須自主重複運行測試指令，確保 100% 通過無回歸後方可交付，並準備人工驗證步驟。
+> 4. **原子化 Git Commit**：
+>    - 每次獨立功能完成或 Bug 修復，必須立即執行清楚語意的 \`git commit\`。
+> 5. **重要決策自動記入歷程時間軸**：
+>    - 每完成一輪重要決策、找到 bug 根因、確認架構選擇，自動寫入 \`AGENT_MEMORY.md\`（標記來源 Agent）。
+> 6. **長期高價值原則**：
 >    - 不要記瑣碎對話，只存長期有用知識。
 `.trim();
 }

@@ -942,13 +942,19 @@ public class DaemonClient: ObservableObject {
         return """
         # 🎯 \(name) 專案 Agent 開工核心準則 (\(name) Agent Directive)
         > ⚠️ 所有 Agent (OpenCode / Claude / Cursor / Windsurf) 必讀核心約束：
-        > 1. 每次開工前，優先從 AGENT_MEMORY.md 與 shared memory 搜尋本專案相關：
-        >    - 🏛 架構約束 (專案結構邊界、技術棧規範、依賴與約定)
-        >    - 🛠 工作規範 (型別檢查、代碼風格、測試驗證規範)
-        >    - 🚫 過往失敗方案與踩坑記錄 (避免重複過去嘗試失敗的做法)
-        > 2. 每完成一輪重要決策、找到 bug 根因、確認一個架構選擇：
-        >    - 自動寫入專案記憶庫 / AGENT_MEMORY.md，標記來源 Agent（OpenCode / Claude / Cursor / Windsurf）。
-        > 3. 長期高價值原則：不要記瑣碎對話，只存長期有用知識。
+        > 1. 產品設計與技術方案先行：
+        >    - 任何新功能必須先進行產品設計思考，評估是否需要構建 Demo 原型。
+        >    - 正式編碼前，產出結構清晰的技術方案文字檔案 (TECH_PROPOSAL.txt 或 <feature>_proposal.txt)。
+        > 2. 每次開工前，優先查閱專案記憶庫：
+        >    - 閱讀 AGENT_MEMORY.md 與 shared memory：掌握架構約定、技術棧規範、過往失敗方案與踩坑記錄。
+        > 3. 改動前編寫測試與 AI 自主重複測試：
+        >    - 每次修改功能前，必須先編寫或更新相關測試用例。
+        >    - 程式碼實作完成後，AI 必須自主重複運行測試指令，確保 100% 通過無回歸後方可交付，並準備人工驗證步驟。
+        > 4. 原子化 Git Commit：
+        >    - 每次獨立功能完成或 Bug 修復，必須立即執行清楚語意的 git commit。
+        > 5. 重要決策自動記入歷程時間軸：
+        >    - 每完成一輪重要決策、找到 bug 根因、確認架構選擇，自動寫入 AGENT_MEMORY.md（標記來源 Agent）。
+        > 6. 長期高價值原則：不要記瑣碎對話，只存長期有用知識。
         """
     }
 
@@ -1077,11 +1083,40 @@ public class DaemonClient: ObservableObject {
 
             ---
 
+            ## 🔄 Standard 6-Stage Feature Engineering Lifecycle
+
+            ### 1. 🎨 Product Design & Requirement Scoping (產品設計)
+            - Before touching any code, thoroughly analyze the feature intent, user journeys, edge cases, and visual/UX interactions.
+            - Clearly define: Why build this? What is the expected behavior? What are the non-goals and constraints?
+
+            ### 2. 💡 Demo / Prototype Evaluation (評估 Demo 原型)
+            - Assess whether a lightweight interactive prototype (Demo) or Proof-of-Concept is required to de-risk design assumptions and validate technical viability.
+
+            ### 3. 📝 Technical Proposal Text File (產出技術方案 .txt 檔案)
+            - Prior to writing production code, author a concise and structured technical proposal file (e.g. `TECH_PROPOSAL.txt` or `<feature>_proposal.txt`).
+            - Detail the architecture diagrams, impacted modules, data structures, state flow, dependencies, and failure handling.
+
+            ### 4. 💻 Implementation & Clean Coding (產品實現)
+            - Implement production code strictly following the approved technical proposal and codebase conventions.
+            - Adhere to defensive programming, clean architecture, high cohesion, low coupling, and type safety.
+
+            ### 5. 🤖 AI Automated Repeated Testing (AI 自主重複測試)
+            - The AI must autonomously run all test suites repeatedly (e.g., `npm test`, `cargo test`, `pytest`, `swift test`).
+            - Ensure 100% test pass rate with zero flaky tests, zero warnings, and zero regressions before human review.
+
+            ### 6. 👤 Human Verification Ready (準備人工驗證)
+            - Provide a clear, step-by-step "Human Verification Checklist" so the user can easily perform manual validation and visual spot-checks.
+
+            ### 7. 🔁 Continuous Modification Cycle (每次修改功能必先寫代碼與重新測試)
+            - Whenever modifying an existing feature or fixing a bug, enforce the loop: write/update tests -> implement code changes -> repeatedly re-run tests until 100% verified.
+
+            ---
+
             ## ⚡️ Non-Negotiable Core Workflow Rules
 
             ### 1. 🧪 Test-First & 100% Verification Before Delivery (測試優先與驗證保證)
             - **Mandatory Pre-requisite**: Before making any code changes, always write or update corresponding unit/integration tests covering the intended behavior and edge cases.
-            - **Verification Guarantee**: Before delivering your work to the user, you MUST run all test suites (e.g., `npm test`, `cargo test`, `pytest`, `swift test`) and ensure 100% tests pass with zero failures and zero regressions.
+            - **Verification Guarantee**: Before delivering your work to the user, you MUST run all test suites and ensure 100% tests pass with zero failures and zero regressions.
 
             ### 2. 📦 Atomic Git Commit on Every Change (每次改動必須 Git Commit)
             - **Immediate Version Control**: For every distinct feature modification, bug fix, or refactor, you must execute a clean `git commit`.
@@ -1104,12 +1139,15 @@ public class DaemonClient: ObservableObject {
             ```markdown
             You are working on the project "\(name)".
             Before starting any code changes:
-            1. Read `AGENT_MEMORY.md` and review recent decisions and constraints.
-            2. Write or update tests covering the task scope.
-            3. Implement changes with precision, preserving existing code style.
-            4. Run the full test suite and confirm 100% pass before presenting the solution.
-            5. Execute a descriptive git commit for every change made.
-            6. Log your completed actions and decisions into `AGENT_MEMORY.md`.
+            1. Conduct product design and evaluate if a quick demo prototype is needed.
+            2. Produce a technical proposal text file (<feature>_proposal.txt).
+            3. Read `AGENT_MEMORY.md` and review recent decisions and constraints.
+            4. Write or update tests covering the task scope.
+            5. Implement changes with precision, preserving existing code style.
+            6. Repeatedly run the full test suite and confirm 100% pass before presenting the solution.
+            7. Provide a concise human verification checklist.
+            8. Execute a descriptive git commit for every change made.
+            9. Log your completed actions and decisions into `AGENT_MEMORY.md`.
             ```
             """
         case .simplifiedChinese:
@@ -1121,11 +1159,39 @@ public class DaemonClient: ObservableObject {
 
             ---
 
+            ## 🔄 研发标准六阶段完整生命周期 (Feature Lifecycle)
+
+            ### 1. 🎨 阶段一：产品设计与需求梳理 (Product Design)
+            - 任何新功能、组件或需求变动，必须先进行严谨的产品设计思考，梳理用户需求、交互流转、界面原型与边缘异常场景。
+            - 明确「为什么做」、「达成何种预期」与「系统限制边界」。
+
+            ### 2. 💡 阶段二：评估 Demo / 概念原型 (Demo Evaluation)
+            - 评估是否有必要先行建立轻量级 Demo 或概念原型，用以验证交互构想与解除技术不确定性。
+
+            ### 3. 📝 阶段三：给出技术方案文本文件 (Technical Proposal .txt File)
+            - 在正式写主干代码前，必须输出结构清晰的技术方案文本文件（例如 `TECH_PROPOSAL.txt` 或 `<feature>_proposal.txt`）。
+            - 详列架构设计、模块调用图、受影响档案、资料结构变动、依赖关系与防踩坑策略。
+
+            ### 4. 💻 阶段四：产品实现与编写代码 (Implementation)
+            - 严密依照技术方案开展代码编写，严守防守性编程原则、代码可读性与既有架构命名惯例。
+
+            ### 5. 🤖 阶段五：AI 自主重复测试与验证 (AI Repeated Testing)
+            - 编写代码完成后，AI 必须自主重复运行单元测试与自动化验证脚本（例如 `npm test`、`cargo test`、`pytest`）。
+            - 确保测试 100% 全部通过、零报错、零回归，绝不交付未经自身重复测试的代码。
+
+            ### 6. 👤 阶段六：准备最终人工验证清单 (Human Verification)
+            - 交付成果时，必须附带简明清晰的「人工验证操作指南（Human Verification Checklist）」，方便用户一步步进行实际效果验收。
+
+            ### 7. 🔁 阶段七：功能修改闭环 (每次修改功能必先写代码与重新测试)
+            - 每修改一个功能之前或修复 Bug 时，均必须遵循闭环：先编写/更新测试用例 -> 实施代码修改 -> 再次重新测试验证，确保全部功能与新逻辑稳固通过。
+
+            ---
+
             ## ⚡️ 不可逾越的核心开工与交付约束
 
             ### 1. 🧪 每次改动前必须编写/更新测试，交付前确保 100% 验证通过
             - **改动前编写测试**：在进行任何业务逻辑或程式码改动前，必须先编写或同步更新相对应的单元测试与整合测试用例。
-            - **交付前全体验证**：在将成果交付给用户前，必须于本地实际运行测试命令（例如 `npm test`、`cargo test`、`pytest`），确保所有测试与验证 100% 全部通过，严禁交付未经测试的代码。
+            - **交付前全体验证**：在将成果交付给用户前，必须于本地实际运行测试命令（例如 `npm test`、`cargo test`、`pytest`），确保所有测试与验证 100% 全部通过，严禁提交未经测试的代码。
 
             ### 2. 📦 每次改动后必须执行 Git Commit (Atomic Versioning)
             - **即时提交**：每完成一个独立模块改动、Bug 修复或功能实现，必须立即执行 `git commit`。
@@ -1148,12 +1214,15 @@ public class DaemonClient: ObservableObject {
             ```markdown
             你正在负责「\(name)」专案的开发工作。
             在开始任何程式码修改前，必须严格遵守以下规范：
-            1. 优先查阅 `AGENT_MEMORY.md` 掌握专案上下文与过往决策。
-            2. 每次改动前必须编写或更新相关测试用例。
-            3. 执行程式码实作，严守防御性原则与架构约定。
-            4. 交付给使用者前，必须在本地完整运行测试，确保所有测试与验证 100% 全部通过。
-            5. 每次改动完成必须立即进行描述清晰的 git commit。
-            6. 完成后将本次工作摘要与核心决策写入 `AGENT_MEMORY.md` 的历程时间轴。
+            1. 先进行产品设计，评估是否需要构建 Demo 原型。
+            2. 给出技术方案文本档案 (<feature>_proposal.txt)。
+            3. 优先查阅 `AGENT_MEMORY.md` 掌握专案上下文与过往决策。
+            4. 每次改动前必须编写或更新相关测试用例。
+            5. 执行程式码实作，严守防御性原则与架构约定。
+            6. AI 自主重复测试，交付给使用者前必须确保所有测试与验证 100% 全部通过。
+            7. 提供清晰的人工验证步骤。
+            8. 每次改动完成必须立即进行描述清晰的 git commit。
+            9. 完成后将本次工作摘要与核心决策写入 `AGENT_MEMORY.md` 的历程时间轴。
             ```
             """
         case .traditionalChinese:
@@ -1162,6 +1231,34 @@ public class DaemonClient: ObservableObject {
             > **目標專案**: `\(name)`
             > **適用 Agents**: OpenCode, Claude Desktop, Claude Code, Cursor, Windsurf, Copilot
             > **執行準則**: 資深系統架構師標準，高可靠性、防禦性編程、零破壞性變更。
+
+            ---
+
+            ## 🔄 研發標準六階段完整生命週期 (Feature Lifecycle)
+
+            ### 1. 🎨 階段一：產品設計與需求梳理 (Product Design)
+            - 任何新功能、組件或需求變動，必須先進行嚴謹的產品設計思考，梳理使用者需求、互動流轉、介面原型與邊界異常場景。
+            - 明確「為什麼做」、「達成何種預期」與「系統限制邊界」。
+
+            ### 2. 💡 階段二：評估 Demo / 概念原型 (Demo Evaluation)
+            - 評估是否有必要先行建立輕量級 Demo 或概念原型，用以驗證互動構想與消除技術不確定性。
+
+            ### 3. 📝 階段三：給出技術方案文字檔案 (Technical Proposal .txt File)
+            - 在正式寫主幹代碼前，必須輸出結構清晰的技術方案文字檔案（例如 `TECH_PROPOSAL.txt` 或 `<feature>_proposal.txt`）。
+            - 詳列架構設計、模組調用圖、受影響檔案、資料結構變動、依賴關係與防踩坑策略。
+
+            ### 4. 💻 階段四：產品實現與編寫代碼 (Implementation)
+            - 嚴密依照技術方案開展程式碼編寫，嚴守防禦性編程原則、代碼可讀性與既有架構命名慣例。
+
+            ### 5. 🤖 階段五：AI 自主重複測試與驗證 (AI Repeated Testing)
+            - 編寫代碼完成後，AI 必須自主重複運行單元測試與自動化驗證腳本（例如 `npm test`、`cargo test`、`pytest`、`swift test`）。
+            - 確保測試 100% 全部通過、零報錯、零回歸，絕不交付未經自身重複測試的代碼。
+
+            ### 6. 👤 階段六：準備最終人工驗證清單 (Human Verification)
+            - 交付成果時，必須附帶簡明清晰的「人工驗證操作指南（Human Verification Checklist）」，方便用戶一步步進行實際效果驗收。
+
+            ### 7. 🔁 階段七：功能修改閉環 (每次修改功能必先寫代碼與重新測試)
+            - 每修改一個功能之前或修復 Bug 時，均必須遵循閉環：先編寫/更新測試用例 -> 實施代碼修改 -> 再次重新測試驗證，確保全部功能與新邏輯穩固通過。
 
             ---
 
@@ -1192,12 +1289,15 @@ public class DaemonClient: ObservableObject {
             ```markdown
             你正在負責「\(name)」專案的開發工作。
             在開始任何程式碼修改前，必須嚴格遵守以下規範：
-            1. 優先查閱 `AGENT_MEMORY.md` 掌握專案上下文與過往決策。
-            2. 每次改動前必須編寫或更新相關測試用例。
-            3. 執行程式碼實作，嚴守防禦性原則與架構約定。
-            4. 交付給使用者前，必須在本機完整執行測試，確保所有測試與驗證 100% 全部通過。
-            5. 每次改動完成必須立即進行描述清晰的 git commit。
-            6. 完成後將本次工作摘要與核心決策寫入 `AGENT_MEMORY.md` 的歷程時間軸。
+            1. 先進行產品設計，評估是否需要構建 Demo 原型。
+            2. 給出技術方案文字檔案 (<feature>_proposal.txt)。
+            3. 優先查閱 `AGENT_MEMORY.md` 掌握專案上下文與過往決策。
+            4. 每次改動前必須編寫或更新相關測試用例。
+            5. 執行程式碼實作，嚴守防禦性原則與架構約定。
+            6. AI 自主重複測試，交付給使用者前必須確保所有測試與驗證 100% 全部通過。
+            7. 提供清晰的人工驗證步驟。
+            8. 每次改動完成必須立即進行描述清晰的 git commit。
+            9. 完成後將本次工作摘要與核心決策寫入 `AGENT_MEMORY.md` 的歷程時間軸。
             ```
             """
         }
